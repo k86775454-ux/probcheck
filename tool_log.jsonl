@@ -1,0 +1,4 @@
+{"t": "2026-10-28T19:05", "tool": "book_slot", "args": {"date": "2026-11-14", "minutes": 900}, "confirmed": false, "confirmed_by": null, "result": {"status": "refused", "reason": "minutes must be between 15 and 180"}}
+{"t": "2026-10-28T19:05", "tool": "book_slot", "args": {"date": "2026-11-14", "minutes": 90}, "confirmed": true, "confirmed_by": "user", "result": {"status": "ok", "id": "slot_1", "total_slots": 1}}
+{"t": "2026-10-29T12:20", "tool": "book_slot", "args": {"date": "2026-11-14", "minutes": 900}, "confirmed": false, "confirmed_by": null, "result": {"status": "refused", "reason": "minutes must be between 15 and 180"}}
+{"t": "2026-10-29T12:20", "tool": "book_slot", "args": {"date": "2026-11-14", "minutes": 900}, "confirmed": false, "confirmed_by": null, "result": {"status": "refused", "reason": "minutes must be between 15 and 180"}}

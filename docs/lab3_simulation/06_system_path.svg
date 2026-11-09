@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760" role="img" aria-labelledby="title desc">
+  <title id="title">Lab 3 system path: evidence-checking study assistant</title>
+  <desc id="desc">A student question flows through simulated retrieval and a condition validation gate to a response with sources and user-controlled next actions. The revised path asks for clarification if the events or probabilities are missing.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#425466"/></marker>
+    <style>
+      text{font-family:Arial,Helvetica,sans-serif;fill:#172b4d}.title{font-size:30px;font-weight:700}.sub{font-size:16px;fill:#52647a}.head{font-size:19px;font-weight:700}.body{font-size:15px}.small{font-size:13px;fill:#425466}.sim{fill:#eef5ff;stroke:#3973ac;stroke-width:2}.plan{fill:#fff8e8;stroke:#ad7a00;stroke-width:2;stroke-dasharray:8 5}.user{fill:#eef8f1;stroke:#36804b;stroke-width:2}.line{stroke:#425466;stroke-width:2.2;fill:none;marker-end:url(#arrow)}.optional{stroke:#748397;stroke-width:1.8;fill:none;stroke-dasharray:6 5;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect width="1440" height="760" fill="#ffffff"/>
+  <text x="60" y="58" class="title">Evidence-checking study assistant — system path</text>
+  <text x="60" y="88" class="sub">Use case from Lab 2: check an explanation against probability definitions; expose uncertainty and preserve the student's control.</text>
+  <rect x="60" y="135" width="190" height="124" rx="14" class="user"/>
+  <text x="82" y="171" class="head">Student</text><text x="82" y="199" class="body">Question + optional</text><text x="82" y="221" class="body">probabilities/context</text><text x="82" y="244" class="small">Input is implemented as a written test</text>
+  <rect x="310" y="135" width="220" height="124" rx="14" class="sim"/>
+  <text x="332" y="171" class="head">Input interpretation</text><text x="332" y="199" class="body">Identify events, relation</text><text x="332" y="221" class="body">and known probabilities</text><text x="332" y="244" class="small">Simulated in Markdown</text>
+  <rect x="600" y="135" width="230" height="124" rx="14" class="sim"/>
+  <text x="622" y="171" class="head">Course-note retrieval</text><text x="622" y="199" class="body">Definitions of mutual</text><text x="622" y="221" class="body">exclusivity + independence</text><text x="622" y="244" class="small">Mock passages; no live database</text>
+  <rect x="900" y="135" width="245" height="124" rx="14" class="plan"/>
+  <text x="922" y="171" class="head">Condition validation</text><text x="922" y="199" class="body">Check claim against definitions</text><text x="922" y="221" class="body">Require conditions; no guessing</text><text x="922" y="244" class="small">Simulated; planned deterministic gate</text>
+  <rect x="1210" y="135" width="180" height="124" rx="14" class="sim"/>
+  <text x="1232" y="171" class="head">Response</text><text x="1232" y="199" class="body">Qualified answer</text><text x="1232" y="221" class="body">+ evidence cue</text><text x="1232" y="244" class="small">Simulated</text>
+  <path d="M250 197 H305" class="line"/><path d="M530 197 H595" class="line"/><path d="M830 197 H895" class="line"/><path d="M1145 197 H1205" class="line"/>
+  <rect x="325" y="365" width="310" height="118" rx="14" class="plan"/>
+  <text x="349" y="400" class="head">Clarification / correction</text><text x="349" y="428" class="body">“Which events do you mean?”</text><text x="349" y="451" class="body">“Are they mutually exclusive?”</text><text x="349" y="473" class="small">Ask for probabilities if needed; revised Test B</text>
+  <rect x="790" y="365" width="310" height="118" rx="14" class="user"/>
+  <text x="814" y="400" class="head">Student chooses next step</text><text x="814" y="428" class="body">View source • correct details</text><text x="814" y="451" class="body">Report mismatch • follow up • stop</text><text x="814" y="473" class="small">Student stays in control</text>
+  <path d="M1022 259 V310 H480 V360" class="optional"/><text x="657" y="301" class="small">Missing or ambiguous conditions</text>
+  <path d="M635 424 H785" class="line"/><text x="650" y="411" class="small">Clarification input</text>
+  <path d="M1300 259 V320 H1090 V360" class="line"/>
+  <path d="M790 424 H740 V530 H1100 V260" class="optional"/><text x="800" y="522" class="small">After correction or clarification, recheck</text>
+  <rect x="60" y="585" width="1320" height="112" rx="12" fill="#f7f9fc" stroke="#d7dee8"/>
+  <text x="84" y="619" class="head">Evidence and fallback rules</text>
+  <text x="84" y="648" class="body">Mutual exclusivity: P(A∩B)=0. Independence: P(A∩B)=P(A)P(B). For positive probabilities, both cannot hold; if conditions are unknown, ask or state the result conditionally.</text>
+  <text x="84" y="676" class="body">If retrieval is missing/conflicting/unavailable, say it is unchecked; a source link alone does not prove the specific claim. Report triggers a recheck, not automatic model training.</text>
+</svg>

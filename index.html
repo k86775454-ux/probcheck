@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab 4 · Evidence-checking study assistant</title>
+<style>
+:root {color-scheme:light; font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif; color:#13263a}
+*{box-sizing:border-box}
+body{margin:0;background:#f4f7fa;min-height:100vh}
+header{padding:24px 5vw;color:white;background:#113d59}
+header h1{font-size:1.5rem;margin:0 0 4px}
+header p{margin:0;color:#dbeaf2;font-size:.92rem}
+.layout{display:grid;grid-template-columns:minmax(300px,1fr) minmax(330px,1fr);gap:18px;padding:24px 5vw;align-items:start}
+.panel{background:white;border-radius:14px;padding:22px;box-shadow:0 1px 6px #13263a10;min-width:0}
+h2{font-size:1.08rem;margin:0 0 12px}
+.turn{margin:8px 0;padding:10px 13px;border-radius:10px;background:#e8f1f5;white-space:pre-wrap;word-break:break-word}
+.me{background:#145276;color:white;margin-left:12%}
+#transcript{min-height:100px;max-height:350px;overflow:auto}
+button{padding:9px 14px;border:1px solid #317b76;color:#13534e;background:#f8fffd;border-radius:8px;cursor:pointer;font:inherit;font-size:.92rem}
+button:hover{background:#dcefeb}
+.buttons{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:17px}
+.controls{display:flex;gap:8px;margin-top:12px}
+input{width:100%;min-width:0;padding:11px;font:inherit;border-radius:8px;border:1px solid #a7b8c0}
+.primary{background:#116456;color:white;border-color:#116456}
+.primary:hover{background:#0e5146}
+.answer{font-size:1.05rem;line-height:1.55;white-space:pre-wrap}
+.alert{background:#fff2e8;color:#663013;border-left:5px solid #b35a1c;padding:12px;margin-top:12px;border-radius:5px}
+.evidence{background:#f1f7f5;padding:12px;border-radius:10px;margin:12px 0}
+.evidence h3{margin:0 0 8px;font-size:1rem}
+.source{margin:10px 0;border-bottom:1px solid #cfdfd9;padding-bottom:10px}
+.source:last-child{border:0;padding-bottom:0}
+.meta{font-size:.81rem;color:#425f60}
+.passage{margin:5px 0;line-height:1.45;overflow-wrap:anywhere}
+.pill{font-size:.72rem;font-weight:700;color:#91370d;background:#ffdfc9;border-radius:5px;padding:2px 5px}
+.note{font-size:.85rem;color:#596b75}
+.image-preview{margin:10px 0;display:block;max-width:100%;max-height:250px;border:1px solid #c7d0d8;border-radius:8px}
+.detail{padding:9px;background:#eef4f8;border-radius:7px;margin:8px 0}
+@media(max-width:900px){.layout{grid-template-columns:1fr;padding:15px}.panel{padding:15px}}
+</style>
+</head>
+<body>
+<header><h1>Evidence-checking study assistant · Lab 4</h1>
+<p>Offline teaching prototype · Retrieved evidence · Validated tool · Image confidence/refusal</p></header>
+<div class="layout">
+<main class="panel">
+<h2>Ask about the supplied course corpus</h2>
+<div class="buttons">
+<button onclick="send('When is coursework 1 due?')">Grounded question</button>
+<button onclick="send('What is the late-submission penalty?')">Stale source</button>
+<button onclick="send('Can I use an AI assistant for the project?')">Unanswerable</button>
+</div>
+<h2>Test image and tool boundaries</h2>
+<div class="buttons">
+<button onclick="send('__poster__')">Test poster image</button>
+<button onclick="send('__noticeboard__')">Test noticeboard image</button>
+<button onclick="send('book a revision slot')">Propose revision slot</button>
+<button onclick="send('__invalid_tool__')">Test invalid 900-minute call</button>
+</div>
+<div class="controls">
+<input id="msg" aria-label="Your question" placeholder="Type a message and press Enter" autofocus>
+<button class="primary" onclick="sendInput()">Send</button>
+</div>
+<div id="transcript" aria-live="polite"></div>
+</main>
+<aside class="panel">
+<h2>Response and provenance</h2>
+<div id="card" aria-live="polite"><p class="note">Choose a test or enter a question. Evidence will appear here.</p></div>
+<p class="note">Demo corpus is supplied for this lab. Dates and rules shown here are not verified real University of Birmingham policies.</p>
+</aside>
+</div>
+<script>
+const t=document.getElementById('transcript'), card=document.getElementById('card');
+function el(tag, cls, text){const a=document.createElement(tag);if(cls)a.className=cls;if(text!==undefined)a.textContent=text;return a;}
+function say(text,me){const d=el('div','turn'+(me?' me':''),text);t.appendChild(d);t.scrollTop=t.scrollHeight;}
+function render(data){
+  card.replaceChildren();
+  const answer=el('p','answer',data.reply||'No response');card.appendChild(answer);
+  if(data.image_path){const im=el('img','image-preview');im.src=data.image_path;im.alt='Course-supplied test image';card.appendChild(im);}
+  if(data.image){
+    if(data.image.refused){card.appendChild(el('p','alert','Refused: '+data.image.reason));}
+    else{card.appendChild(el('p','detail','Claim: '+data.image.claim));
+         card.appendChild(el('p','detail','Confidence: '+Number(data.image.confidence).toFixed(2)));
+         card.appendChild(el('p','note','Evidence: '+data.image.evidence));}
+  }
+  if(data.stale_warning){const w=el('p','alert',data.stale_warning);w.setAttribute('role','alert');card.appendChild(w);}
+  if(data.recovery_notice){const w=el('p','alert',data.recovery_notice);w.setAttribute('role','alert');card.appendChild(w);}
+  if(data.evidence&&data.evidence.length){
+    const box=el('section','evidence');box.appendChild(el('h3','','Quoted passages and provenance'));
+    data.evidence.forEach(h=>{
+      const d=el('div','source');const meta=el('div','meta',h.source+' | '+h.section+' | updated '+h.date+' | score '+Number(h.score).toFixed(3));
+      d.appendChild(meta);if(h.superseded)d.appendChild(el('span','pill','SUPERSEDED'));
+      d.appendChild(el('blockquote','passage','“'+h.text+'”'));box.appendChild(d);
+    });card.appendChild(box);
+  }
+  if(data.tool_confirmation){
+    card.appendChild(el('p','detail',data.tool_confirmation));
+    const yes=el('button','primary','Confirm');yes.onclick=()=>send('__confirm_tool__');
+    const no=el('button','','Cancel');no.onclick=()=>send('__cancel_tool__');
+    card.append(yes,no);
+  }
+  if(data.tool_result){card.appendChild(el('pre','detail',JSON.stringify(data.tool_result,null,2)));}
+  if(data.unsupported_claims&&data.unsupported_claims.length){card.appendChild(el('p','note','Not checked: '+data.unsupported_claims.join(', ')));}
+}
+async function send(text){
+  if(!text||!text.trim())return;
+  if(!text.startsWith('__'))say(text,true);
+  try{
+    const r=await fetch('/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text})});
+    const data=await r.json();if(!r.ok)throw Error(data.error||'Request failed');
+    say(data.reply||'No reply',false);render(data);
+  }catch(e){say('Error: '+e.message,false);card.replaceChildren(el('p','alert','Error: '+e.message));}
+}
+function sendInput(){const i=document.getElementById('msg'),v=i.value.trim();if(v){i.value='';if(v.startsWith('__')){say('Use the visible test buttons for internal commands.',false);return;}send(v);}}
+document.getElementById('msg').addEventListener('keydown',e=>{if(e.key==='Enter')sendInput();});
+</script>
+</body>
+</html>
