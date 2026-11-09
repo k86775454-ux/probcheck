@@ -196,7 +196,7 @@ function showReport(d){
   else{const c=r.recheck;
     box.append(el("strong","","Report "+r.id+" saved. "));
     if(c.supported){box.append("I rechecked this sentence. The notes contain: "+c.matched_terms.join(", ")+". ");
-      if(c.numbers_from_calculation.length)box.append("The numbers "+c.numbers_from_calculation.join(", ")+" come from the calculation, not from the notes. ");}
+      if(c.numbers_from_calculation.length)box.append("The numbers "+c.numbers_from_calculation.join(", ")+" come from your values and the calculation, not from the notes. ");}
     else box.append("I rechecked it and could not support it ("+c.reason+"), so I removed it. ");
     box.append("Your report is kept for the tutor to review; it does not change the notes or retrain anything.");}
   (li||card).appendChild(box);

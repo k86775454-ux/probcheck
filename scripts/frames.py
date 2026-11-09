@@ -2,9 +2,13 @@
 import sys
 from playwright.sync_api import sync_playwright
 OUT = sys.argv[1]; URL = "http://localhost:8765/"
+def box(page, sel, last=False):
+    loc = page.locator(sel); loc = loc.last if last else loc.first
+    return loc.evaluate("e => {const r = e.getBoundingClientRect(); "
+                        "return {x: r.left + scrollX, y: r.top + scrollY, width: r.width, height: r.height};}")
 def clip(page, name, top_sel, bottom_sel=None, pad=10):
-    page.wait_for_timeout(500)
-    t = page.locator(top_sel).first.bounding_box(); b = page.locator(bottom_sel or top_sel).last.bounding_box()
+    page.wait_for_timeout(900)          # let smooth scrolling finish before measuring
+    t = box(page, top_sel); b = box(page, bottom_sel or top_sel, last=True)
     x = min(t["x"], b["x"]) - pad; y = t["y"] - pad
     w = max(t["x"] + t["width"], b["x"] + b["width"]) - x + pad; h = b["y"] + b["height"] - y + pad
     page.screenshot(path=f"{OUT}/{name}.png", clip={"x": x, "y": y, "width": w, "height": h}, full_page=True)
@@ -18,7 +22,8 @@ with sync_playwright() as p:
     page.click("#send"); page.wait_for_selector(".cue.checked")
     clip(page, "f1_2_answer", ".cue", ".steps")
     page.locator("ol.answer li").nth(2).locator("button.src").click()
-    clip(page, "f1_3_source", ".passage.hl")
+    clip(page, "f1_3_source", "ol.answer li:nth-child(3)", pad=34)
+    clip(page, "f1_3b_passage", ".passage.hl")
     page.click("text=Add a revision slot for this topic"); page.wait_for_selector("#toolbox button.primary")
     clip(page, "f1_4_confirm", "#toolbox")
     page.click("#toolbox button.primary"); page.wait_for_selector("#toolbox >> text=Added")
@@ -37,7 +42,7 @@ with sync_playwright() as p:
     page.click("#send"); page.wait_for_selector("details.removed"); page.click("details.removed summary")
     clip(page, "f3_1_removed", "ol.answer", "details.removed")
     page.locator("ol.answer li").nth(2).locator("text=This source doesn't support it").click(); page.wait_for_selector(".reportbox")
-    clip(page, "f3_2_report", "ol.answer li >> nth=2")
+    clip(page, "f3_2_report", "ol.answer li:nth-child(3)", pad=34)
     page.uncheck("#overclaim"); page.click("text=Outside the notes"); page.wait_for_selector(".cue.cannot_check")
     clip(page, "f3_3_decline", ".cue", ".reply")
     br.close()
