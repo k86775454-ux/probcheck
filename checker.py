@@ -130,7 +130,8 @@ def check(interp):
         val = ab / b
         out["numbers"] = [ab, b, val]
         out["steps"] = ["P(A|B) = P(A∩B) / P(B) = %s / %s = %s" % (fmt(ab), fmt(b), fmt(val))]
-        out["facts"].append(_fact("conditional_def", "So P(A|B) = %s / %s = %s." % (fmt(ab), fmt(b), fmt(val))))
+        out["facts"].append(_fact("conditional_def", "So the conditional probability is P(A|B) = P(A∩B) / P(B) = %s / %s = %s."
+                                  % (fmt(ab), fmt(b), fmt(val))))
         out["verdict"] = fmt(val)
         return out
 
@@ -148,9 +149,13 @@ def check(interp):
             return out
         val = a + b - ab
         out["numbers"] = [a, b, ab, val]
-        out["steps"] = ["P(A∪B) = %s + %s − %s = %s" % (fmt(a), fmt(b), fmt(ab), fmt(val))]
-        rule = "addition_exclusive" if interp.get("mutually_exclusive") else "addition_general"
-        out["facts"].append(_fact(rule, "So P(A∪B) = %s + %s − %s = %s." % (fmt(a), fmt(b), fmt(ab), fmt(val))))
+        out["steps"] = ["P(A∪B) = P(A) + P(B) − P(A∩B) = %s + %s − %s = %s" % (fmt(a), fmt(b), fmt(ab), fmt(val))]
+        if interp.get("mutually_exclusive"):
+            out["facts"].append(_fact("addition_exclusive", "So for these mutually exclusive events, "
+                                      "P(A∪B) = P(A) + P(B) = %s + %s = %s." % (fmt(a), fmt(b), fmt(val))))
+        else:
+            out["facts"].append(_fact("addition_general", "So by the addition rule, P(A∪B) = P(A) + P(B) − "
+                                      "P(A∩B) = %s + %s − %s = %s." % (fmt(a), fmt(b), fmt(ab), fmt(val))))
         out["verdict"] = fmt(val)
         return out
 

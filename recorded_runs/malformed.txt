@@ -1,3 +1,0 @@
-Sure! Here is the JSON you asked for:
-
-{"reply": "I can move that for you", "options": ["Thu 09:40"

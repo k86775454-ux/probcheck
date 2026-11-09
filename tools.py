@@ -1,4 +1,6 @@
-"""One tool, with the five checks from Lecture 12 and a log.
+"""One tool, with the checks from Lecture 12 and a log.
+
+A2: book_slot now carries the topic just studied, so the confirmation names what the slot is for.
 
     python tools.py --selftest
 
@@ -13,7 +15,7 @@ SCHEDULE = os.path.join(HERE, "schedule.json")
 
 TOOL = {"name": "book_slot",
         "description": "Add one revision slot to the local schedule. Does not contact anyone.",
-        "args": {"date": "YYYY-MM-DD", "minutes": "integer 15..180"}}
+        "args": {"date": "YYYY-MM-DD", "minutes": "integer 15..180", "topic": "optional text, up to 60 characters"}}
 
 NEEDS_CONFIRMATION = True   # it writes a file the user can see: not reversible without an undo
 
@@ -37,6 +39,9 @@ def valid(call):
     m = int(raw_minutes)
     if not 15 <= m <= 180:
         return False, "minutes must be between 15 and 180"
+    topic = a.get("topic", "")
+    if not isinstance(topic, str) or len(topic) > 60:
+        return False, "topic must be text of at most 60 characters"
     return True, ""
 
 
@@ -44,7 +49,9 @@ def describe(call):
     """What the confirmation shows: the arguments, in words, not the identifier."""
     a = call["arguments"]
     d = datetime.date.fromisoformat(a["date"])
-    return "Add a %d-minute revision slot on %s?" % (int(a["minutes"]), d.strftime("%a %d %b %Y"))
+    topic = (' for "%s"' % a["topic"]) if a.get("topic") else ""
+    return "Add a %d-minute revision slot%s on %s to your local study schedule?" % (
+        int(a["minutes"]), topic, d.strftime("%a %d %b %Y"))
 
 
 def log_outcome(call, confirmed, result):
@@ -71,7 +78,8 @@ def run(call, confirmed_by="user"):
     if any(s["date"] == a["date"] and s["minutes"] == int(a["minutes"]) for s in slots):
         result = {"status": "ok", "id": None, "note": "identical slot already present; nothing added"}
     else:
-        slot = {"id": "slot_%d" % (len(slots) + 1), "date": a["date"], "minutes": int(a["minutes"])}
+        slot = {"id": "slot_%d" % (len(slots) + 1), "date": a["date"], "minutes": int(a["minutes"]),
+                "topic": a.get("topic", "")}
         slots.append(slot)
         with open(SCHEDULE, "w", encoding="utf-8") as f:
             json.dump(slots, f, indent=1)
