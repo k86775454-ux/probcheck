@@ -3,116 +3,220 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lab 4 · Evidence-checking study assistant</title>
+<title>ProbCheck · evidence-checking study assistant</title>
 <style>
-:root {color-scheme:light; font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif; color:#13263a}
+:root{color-scheme:light;font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color:#17202b;
+  --ink:#17202b;--muted:#5b6673;--line:#d9dee4;--bg:#f5f6f8;--card:#fff;--accent:#1f5f8b;
+  --ok:#1e6b45;--okbg:#e6f3ec;--warn:#8a5a00;--warnbg:#fdf3dc;--stop:#9b2c2c;--stopbg:#fbe9e9;--grey:#4a5562;--greybg:#eceff3}
 *{box-sizing:border-box}
-body{margin:0;background:#f4f7fa;min-height:100vh}
-header{padding:24px 5vw;color:white;background:#113d59}
-header h1{font-size:1.5rem;margin:0 0 4px}
-header p{margin:0;color:#dbeaf2;font-size:.92rem}
-.layout{display:grid;grid-template-columns:minmax(300px,1fr) minmax(330px,1fr);gap:18px;padding:24px 5vw;align-items:start}
-.panel{background:white;border-radius:14px;padding:22px;box-shadow:0 1px 6px #13263a10;min-width:0}
-h2{font-size:1.08rem;margin:0 0 12px}
-.turn{margin:8px 0;padding:10px 13px;border-radius:10px;background:#e8f1f5;white-space:pre-wrap;word-break:break-word}
-.me{background:#145276;color:white;margin-left:12%}
-#transcript{min-height:100px;max-height:350px;overflow:auto}
-button{padding:9px 14px;border:1px solid #317b76;color:#13534e;background:#f8fffd;border-radius:8px;cursor:pointer;font:inherit;font-size:.92rem}
-button:hover{background:#dcefeb}
-.buttons{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:17px}
-.controls{display:flex;gap:8px;margin-top:12px}
-input{width:100%;min-width:0;padding:11px;font:inherit;border-radius:8px;border:1px solid #a7b8c0}
-.primary{background:#116456;color:white;border-color:#116456}
-.primary:hover{background:#0e5146}
-.answer{font-size:1.05rem;line-height:1.55;white-space:pre-wrap}
-.alert{background:#fff2e8;color:#663013;border-left:5px solid #b35a1c;padding:12px;margin-top:12px;border-radius:5px}
-.evidence{background:#f1f7f5;padding:12px;border-radius:10px;margin:12px 0}
-.evidence h3{margin:0 0 8px;font-size:1rem}
-.source{margin:10px 0;border-bottom:1px solid #cfdfd9;padding-bottom:10px}
-.source:last-child{border:0;padding-bottom:0}
-.meta{font-size:.81rem;color:#425f60}
-.passage{margin:5px 0;line-height:1.45;overflow-wrap:anywhere}
-.pill{font-size:.72rem;font-weight:700;color:#91370d;background:#ffdfc9;border-radius:5px;padding:2px 5px}
-.note{font-size:.85rem;color:#596b75}
-.image-preview{margin:10px 0;display:block;max-width:100%;max-height:250px;border:1px solid #c7d0d8;border-radius:8px}
-.detail{padding:9px;background:#eef4f8;border-radius:7px;margin:8px 0}
-@media(max-width:900px){.layout{grid-template-columns:1fr;padding:15px}.panel{padding:15px}}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg)}
+header{padding:18px 4vw;background:#18324a;color:#fff}
+header h1{margin:0;font-size:1.35rem;font-weight:650}
+header p{margin:4px 0 0;color:#c9d6e2;font-size:.88rem}
+.layout{display:grid;grid-template-columns:minmax(300px,0.85fr) minmax(360px,1.15fr);gap:18px;padding:18px 4vw;align-items:start}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;min-width:0}
+h2{font-size:1rem;margin:0 0 10px}
+h3{font-size:.92rem;margin:14px 0 6px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.scope{font-size:.86rem;color:var(--muted);background:var(--greybg);border-radius:8px;padding:10px 12px;margin-bottom:12px}
+.scope b{color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 12px}
+button{font:inherit;font-size:.86rem;padding:7px 11px;border:1px solid #9fb3c4;background:#fff;color:var(--accent);border-radius:7px;cursor:pointer}
+button:hover{background:#eef4f9}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button.link{border:0;padding:2px 4px;background:none;text-decoration:underline;font-size:.8rem}
+.row{display:flex;gap:8px}
+input,select{font:inherit;padding:9px;border:1px solid #b5c0cb;border-radius:7px;min-width:0}
+#msg{flex:1}
+.demo{font-size:.82rem;color:var(--muted);margin-top:10px;display:flex;gap:6px;align-items:center}
+#transcript{margin-top:12px;max-height:300px;overflow:auto}
+.turn{margin:6px 0;padding:8px 11px;border-radius:9px;background:var(--greybg);font-size:.9rem;white-space:pre-wrap}
+.turn.me{background:#dce9f4;margin-left:14%}
+.cue{display:flex;gap:10px;align-items:flex-start;border-radius:9px;padding:11px 13px;border:1px solid}
+.cue .icon{font-size:1.25rem;line-height:1.2;font-weight:700}
+.cue .label{font-weight:700;font-size:.95rem}
+.cue .text{font-size:.92rem;margin-top:2px}
+.cue.checked{background:var(--okbg);border-color:#9cc9ae;color:var(--ok)}
+.cue.depends,.cue.clarify,.cue.unsupported{background:var(--warnbg);border-color:#e3c27a;color:var(--warn)}
+.cue.cannot_check,.cue.invalid,.cue.error{background:var(--stopbg);border-color:#e0a6a6;color:var(--stop)}
+.cue .text{color:var(--ink)}
+.understood{border:1px dashed #b5c0cb;border-radius:9px;padding:9px 12px;margin-top:12px;font-size:.88rem}
+.understood dl{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin:6px 0}
+.understood dt{color:var(--muted)}
+.understood dd{margin:0}
+.val{display:inline-block;background:var(--greybg);border-radius:5px;padding:1px 6px;margin:1px 4px 1px 0;font-family:ui-monospace,Menlo,monospace;font-size:.82rem}
+.form{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;margin-top:8px}
+.reply{font-size:1rem;line-height:1.5;margin:12px 0}
+ol.answer{margin:10px 0;padding-left:22px;line-height:1.5}
+ol.answer li{margin:6px 0}
+.src{font-size:.78rem;font-weight:600;margin-left:6px}
+.steps{font-size:.88rem;background:#f3f5f7;border-radius:7px;padding:8px 11px;margin:6px 0;white-space:pre-wrap}
+.note{font-size:.84rem;color:var(--muted)}
+.alert{background:var(--warnbg);border-left:4px solid #d9a521;padding:8px 11px;border-radius:5px;font-size:.88rem;margin:8px 0}
+details.removed{background:var(--stopbg);border-radius:7px;padding:8px 11px;margin:8px 0;font-size:.86rem}
+details.removed s{color:#7a4a4a}
+.reportbox{background:#eef4f9;border-radius:7px;padding:8px 10px;margin:6px 0 2px;font-size:.84rem}
+.passage{border:1px solid var(--line);border-radius:8px;padding:9px 11px;margin:8px 0;transition:background .3s}
+.passage.hl{background:#fff7d6;border-color:#e3c27a;box-shadow:0 0 0 2px #f2dc8f}
+.passage .meta{font-size:.78rem;color:var(--muted)}
+.passage blockquote{margin:5px 0 0;font-size:.9rem;line-height:1.45}
+.passage mark{background:#ffe680;padding:0 1px}
+.pill{font-size:.7rem;font-weight:700;color:#8a2b0d;background:#ffdccb;border-radius:4px;padding:1px 5px;margin-left:6px}
+.tool{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:12px;font-size:.9rem}
+details.ctx{font-size:.8rem;color:var(--muted);margin-top:14px}
+@media(max-width:900px){.layout{grid-template-columns:1fr;padding:12px}}
 </style>
 </head>
 <body>
-<header><h1>Evidence-checking study assistant · Lab 4</h1>
-<p>Offline teaching prototype · Retrieved evidence · Validated tool · Image confidence/refusal</p></header>
+<header>
+  <h1>ProbCheck · evidence-checking study assistant</h1>
+  <p>Prototype · simulated language model · sample probability notes written for this project (not real course material)</p>
+</header>
 <div class="layout">
 <main class="panel">
-<h2>Ask about the supplied course corpus</h2>
-<div class="buttons">
-<button onclick="send('When is coursework 1 due?')">Grounded question</button>
-<button onclick="send('What is the late-submission penalty?')">Stale source</button>
-<button onclick="send('Can I use an AI assistant for the project?')">Unanswerable</button>
-</div>
-<h2>Test image and tool boundaries</h2>
-<div class="buttons">
-<button onclick="send('__poster__')">Test poster image</button>
-<button onclick="send('__noticeboard__')">Test noticeboard image</button>
-<button onclick="send('book a revision slot')">Propose revision slot</button>
-<button onclick="send('__invalid_tool__')">Test invalid 900-minute call</button>
-</div>
-<div class="controls">
-<input id="msg" aria-label="Your question" placeholder="Type a message and press Enter" autofocus>
-<button class="primary" onclick="sendInput()">Send</button>
-</div>
-<div id="transcript" aria-live="polite"></div>
+  <h2>Ask about a probability explanation</h2>
+  <div class="scope"><b>What I can check:</b> mutually exclusive events, the addition rule, independence and
+    conditional probability, against the course notes. I recalculate any numbers you give me.<br>
+    <b>What I can't:</b> anything else. I will say when I couldn't check something.</div>
+  <div class="chips" id="examples"></div>
+  <div class="row">
+    <input id="msg" aria-label="Your question" placeholder="e.g. P(A)=0.3, P(B)=0.5, P(A∩B)=0.15. Are A and B independent?">
+    <button class="primary" id="send">Check</button>
+  </div>
+  <label class="demo"><input type="checkbox" id="overclaim"> Demo: simulate an overconfident model reply</label>
+  <div id="transcript" aria-live="polite"></div>
 </main>
 <aside class="panel">
-<h2>Response and provenance</h2>
-<div id="card" aria-live="polite"><p class="note">Choose a test or enter a question. Evidence will appear here.</p></div>
-<p class="note">Demo corpus is supplied for this lab. Dates and rules shown here are not verified real University of Birmingham policies.</p>
+  <h2>Answer and evidence</h2>
+  <div id="card" aria-live="polite"><p class="note">Ask a question or pick an example. The answer, how sure I am, and the notes it relies on will appear here.</p></div>
 </aside>
 </div>
 <script>
-const t=document.getElementById('transcript'), card=document.getElementById('card');
-function el(tag, cls, text){const a=document.createElement(tag);if(cls)a.className=cls;if(text!==undefined)a.textContent=text;return a;}
-function say(text,me){const d=el('div','turn'+(me?' me':''),text);t.appendChild(d);t.scrollTop=t.scrollHeight;}
-function render(data){
-  card.replaceChildren();
-  const answer=el('p','answer',data.reply||'No response');card.appendChild(answer);
-  if(data.image_path){const im=el('img','image-preview');im.src=data.image_path;im.alt='Course-supplied test image';card.appendChild(im);}
-  if(data.image){
-    if(data.image.refused){card.appendChild(el('p','alert','Refused: '+data.image.reason));}
-    else{card.appendChild(el('p','detail','Claim: '+data.image.claim));
-         card.appendChild(el('p','detail','Confidence: '+Number(data.image.confidence).toFixed(2)));
-         card.appendChild(el('p','note','Evidence: '+data.image.evidence));}
-  }
-  if(data.stale_warning){const w=el('p','alert',data.stale_warning);w.setAttribute('role','alert');card.appendChild(w);}
-  if(data.recovery_notice){const w=el('p','alert',data.recovery_notice);w.setAttribute('role','alert');card.appendChild(w);}
-  if(data.evidence&&data.evidence.length){
-    const box=el('section','evidence');box.appendChild(el('h3','','Quoted passages and provenance'));
-    data.evidence.forEach(h=>{
-      const d=el('div','source');const meta=el('div','meta',h.source+' | '+h.section+' | updated '+h.date+' | score '+Number(h.score).toFixed(3));
-      d.appendChild(meta);if(h.superseded)d.appendChild(el('span','pill','SUPERSEDED'));
-      d.appendChild(el('blockquote','passage','“'+h.text+'”'));box.appendChild(d);
-    });card.appendChild(box);
-  }
-  if(data.tool_confirmation){
-    card.appendChild(el('p','detail',data.tool_confirmation));
-    const yes=el('button','primary','Confirm');yes.onclick=()=>send('__confirm_tool__');
-    const no=el('button','','Cancel');no.onclick=()=>send('__cancel_tool__');
-    card.append(yes,no);
-  }
-  if(data.tool_result){card.appendChild(el('pre','detail',JSON.stringify(data.tool_result,null,2)));}
-  if(data.unsupported_claims&&data.unsupported_claims.length){card.appendChild(el('p','note','Not checked: '+data.unsupported_claims.join(', ')));}
-}
-async function send(text){
-  if(!text||!text.trim())return;
-  if(!text.startsWith('__'))say(text,true);
-  try{
-    const r=await fetch('/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text})});
-    const data=await r.json();if(!r.ok)throw Error(data.error||'Request failed');
-    say(data.reply||'No reply',false);render(data);
-  }catch(e){say('Error: '+e.message,false);card.replaceChildren(el('p','alert','Error: '+e.message));}
-}
-function sendInput(){const i=document.getElementById('msg'),v=i.value.trim();if(v){i.value='';if(v.startsWith('__')){say('Use the visible test buttons for internal commands.',false);return;}send(v);}}
-document.getElementById('msg').addEventListener('keydown',e=>{if(e.key==='Enter')sendInput();});
+const EXAMPLES=[
+ ["Mutually exclusive and independent? (with numbers)","Can two events be mutually exclusive and independent? Let P(A)=0.4 and P(B)=0.5."],
+ ["Ambiguous question","Are they independent? I don't have the numbers."],
+ ["Test independence","P(A)=0.3, P(B)=0.5, P(A∩B)=0.15. Are A and B independent?"],
+ ["Conditional probability","P(A∩B)=0.1, P(B)=0.4. What is P(A|B)?"],
+ ["Outside the notes","What is a Markov chain?"]];
+const ICON={checked:"✓",depends:"?",clarify:"?",unsupported:"!",cannot_check:"✕",invalid:"✕",error:"✕"};
+const $=id=>document.getElementById(id), card=$("card"), tr=$("transcript");
+let current=null;
+function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e;}
+function say(text,me){tr.appendChild(el("div","turn"+(me?" me":""),text));tr.scrollTop=tr.scrollHeight;}
+async function post(body){
+  body.simulate_overclaim=$("overclaim").checked;
+  const r=await fetch("/",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const d=await r.json(); if(!r.ok) throw Error(d.error||"Request failed"); return d;}
+async function ask(q){
+  if(!q.trim())return; say(q,true);
+  card.replaceChildren(el("p","note","Checking against the notes…"));      // acknowledge at once (L04)
+  try{const d=await post({action:"ask",message:q}); say(d.cue_label,false); render(d);}
+  catch(e){card.replaceChildren(el("p","alert","Error: "+e.message));}}
+async function act(body,label){
+  if(label)say(label,true);
+  try{const d=await post(body); if(d.status){say(d.cue_label,false);render(d);} return d;}
+  catch(e){card.appendChild(el("p","alert","Error: "+e.message));}}
+
+function marked(text,terms){                       // highlight the words the check matched
+  const q=el("blockquote"); if(!terms||!terms.length){q.textContent="“"+text+"”";return q;}
+  const esc=terms.map(t=>t.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).sort((a,b)=>b.length-a.length);
+  const parts=text.split(new RegExp("("+esc.join("|")+")","gi"));
+  q.append("“");parts.forEach((p,i)=>q.append(i%2?el("mark","",p):p));q.append("”");return q;}
+
+function showSource(id,terms){
+  document.querySelectorAll(".passage").forEach(p=>{p.classList.remove("hl");
+    const t=p.dataset.text; p.querySelector("blockquote").replaceWith(marked(t,p.dataset.id===id?terms:[]));});
+  const p=document.querySelector('.passage[data-id="'+id+'"]');
+  if(p){p.classList.add("hl");p.scrollIntoView({behavior:"smooth",block:"center"});}}
+
+function understood(d){
+  const i=d.interpretation, box=el("div","understood");
+  box.appendChild(el("strong","",i.corrected?"What I understood (corrected by you)":"What I understood"));
+  const dl=el("dl");
+  dl.append(el("dt","","Question"),el("dd","",i.question_label),el("dt","","Events"),el("dd","",i.events));
+  const vals=el("dd"); const keys=Object.keys(i.values);
+  if(keys.length) keys.forEach(k=>vals.appendChild(el("span","val",k+" = "+i.values[k]))); else vals.textContent="none given";
+  dl.append(el("dt","","Values"),vals); box.appendChild(dl);
+  const btn=el("button","link","Correct these details"); box.appendChild(btn);
+  const form=correctionForm(i); form.hidden=!d.open_correction; box.appendChild(form);
+  btn.onclick=()=>{form.hidden=!form.hidden;}; return box;}
+
+function correctionForm(i){
+  const f=el("div","form"), sel=el("select");
+  [["independence","Are A and B independent?"],["exclusive_and_independent","Can mutually exclusive events be independent?"],
+   ["conditional","What is P(A|B)?"],["union","What is P(A∪B)?"]].forEach(([v,t])=>{const o=el("option","",t);o.value=v;if(v===i.question_type)o.selected=true;sel.appendChild(o);});
+  f.append(el("label","","Question"),sel); const inputs={};
+  ["P(A)","P(B)","P(A∩B)"].forEach(k=>{const inp=el("input");inp.value=i.values[k]??"";inp.placeholder="leave blank if unknown";
+    inp.setAttribute("aria-label",k);inputs[k]=inp;f.append(el("label","",k),inp);});
+  const go=el("button","primary","Check again"); go.onclick=()=>{const values={};for(const k in inputs)values[k]=inputs[k].value;
+    act({action:"correct",fields:{question_type:sel.value,values}},"Corrected: "+sel.options[sel.selectedIndex].text+" "+
+      Object.entries(values).filter(([k,v])=>v).map(([k,v])=>k+"="+v).join(", "));};
+  f.append(el("span"),go); return f;}
+
+function render(d){
+  current=d; card.replaceChildren();
+  const cue=el("div","cue "+d.status); cue.setAttribute("role","status");
+  const body=el("div"); body.append(el("div","label",d.cue_label),el("div","text",d.cue_text));
+  cue.append(el("span","icon",ICON[d.status]||"•"),body); card.appendChild(cue);
+  card.appendChild(understood(d));
+  if(d.reply) card.appendChild(el("p","reply",d.reply));
+  if(d.options&&d.options.length){const c=el("div","chips");d.options.forEach(o=>{const b=el("button","",o.label);
+    b.onclick=()=>{if(o.choice==="exclusive_and_independent")act({action:"clarify",choice:o.choice},o.label);
+      else if(o.choice==="enter_values"){const f=card.querySelector(".form");f.hidden=false;f.querySelector("input").focus();}
+      else{$("msg").focus();}};c.appendChild(b);});card.appendChild(c);}
+  if(d.stale_note) card.appendChild(el("p","alert",d.stale_note));
+  if(d.sentences&&d.sentences.length){
+    card.appendChild(el("h3","","Answer"));const ol=el("ol","answer");
+    d.sentences.forEach((s,idx)=>{const li=el("li");li.append(s.text);
+      const ev=d.evidence.find(e=>e.id===s.passage_id);
+      const src=el("button","link src","§"+(ev?ev.section.split(" ")[0]:"?")+" source");src.title="Show the passage this sentence relies on";
+      src.onclick=()=>showSource(s.passage_id,s.matched);
+      const rep=el("button","link","This source doesn't support it");
+      rep.onclick=()=>act({action:"report",index:idx,reason:"student report"},"Report: sentence "+(idx+1)+" isn't supported").then(r=>r&&showReport(r));
+      li.append(src,rep);ol.appendChild(li);});card.appendChild(ol);}
+  if(d.steps&&d.steps.length){card.appendChild(el("h3","","Calculation (done in code)"));card.appendChild(el("div","steps",d.steps.join("\n")));}
+  if(d.removed&&d.removed.length){const det=el("details","removed");
+    det.appendChild(el("summary","","I removed "+d.removed.length+" sentence"+(d.removed.length>1?"s":"")+" I couldn't support"));
+    d.removed.forEach(r=>{const p=el("p");p.append(el("s","",r.text),el("br"),"Why: "+r.why);det.appendChild(p);});card.appendChild(det);}
+  if(d.evidence&&d.evidence.length){card.appendChild(el("h3","","Course notes used"));
+    d.evidence.forEach(e=>{const p=el("div","passage");p.dataset.id=e.id;p.dataset.text=e.text;
+      const m=el("div","meta",e.source+" · "+e.section+" · updated "+e.date+" · match score "+Number(e.score).toFixed(2));
+      if(e.superseded)m.appendChild(el("span","pill","SUPERSEDED"));p.append(m,marked(e.text,[]));
+      if(e.note)p.appendChild(el("div","note",e.note));card.appendChild(p);});
+    card.appendChild(el("p","note","The match score ranks passages for this question; it is not a probability that the answer is right."));}
+  if(d.slot_offer){const t=el("div","tool");t.id="toolbox";const b=el("button","","Add a revision slot for this topic");
+    b.onclick=()=>post({action:"propose_slot"}).then(showTool);t.appendChild(b);card.appendChild(t);}
+  if(d.context_sent){const c=el("details","ctx");c.appendChild(el("summary","","What was sent to the model"));
+    d.context_sent.forEach(p=>c.appendChild(el("div","",p.role+" · "+p.chars+" chars · "+p.starts+"…")));card.appendChild(c);}}
+
+function showReport(d){
+  if(!d||!d.report)return; const r=d.report;
+  const li=card.querySelectorAll("ol.answer li")[r.index]; const box=el("div","reportbox");
+  if(r.status!=="saved"){box.textContent=r.reason;}
+  else{const c=r.recheck;
+    box.append(el("strong","","Report "+r.id+" saved. "));
+    if(c.supported){box.append("I rechecked this sentence. The notes contain: "+c.matched_terms.join(", ")+". ");
+      if(c.numbers_from_calculation.length)box.append("The numbers "+c.numbers_from_calculation.join(", ")+" come from the calculation, not from the notes. ");}
+    else box.append("I rechecked it and could not support it ("+c.reason+"), so I removed it. ");
+    box.append("Your report is kept for the tutor to review; it does not change the notes or retrain anything.");}
+  (li||card).appendChild(box);
+  if(li){const s=d.sentences[r.index]; if(s)showSource(s.passage_id,s.matched);}}
+
+function showTool(d){
+  const t=$("toolbox"); t.replaceChildren(); const x=d.tool;
+  if(x.status==="awaiting_confirmation"){t.appendChild(el("p","",x.describe));
+    t.appendChild(el("p","note","Arguments: date "+x.call.arguments.date+", "+x.call.arguments.minutes+" minutes, topic “"+x.call.arguments.topic+"”. Nothing is added until you confirm."));
+    const y=el("button","primary","Confirm"),n=el("button","","Cancel");
+    y.onclick=()=>post({action:"confirm_slot"}).then(showTool);n.onclick=()=>post({action:"cancel_slot"}).then(showTool);t.append(y," ",n);}
+  else if(x.status==="done"){const r=x.result;
+    t.appendChild(el("p","",r.status==="ok"?(r.id?"Added "+r.id+" to your local schedule ("+r.total_slots+" slot"+(r.total_slots>1?"s":"")+" in total).":r.note)
+      :r.status==="cancelled"?"Cancelled. Nothing was added.":"Not added: "+r.reason));
+    t.appendChild(el("p","note","Reported from the tool's result: "+JSON.stringify(r)));}
+  else t.appendChild(el("p","alert",x.reason||"Not available."));}
+
+EXAMPLES.forEach(([label,q])=>{const b=el("button","",label);b.title=q;b.onclick=()=>{$("msg").value=q;ask(q);};$("examples").appendChild(b);});
+$("send").onclick=()=>ask($("msg").value);
+$("msg").addEventListener("keydown",e=>{if(e.key==="Enter")ask($("msg").value);});
 </script>
 </body>
 </html>
