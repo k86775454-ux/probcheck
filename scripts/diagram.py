@@ -65,7 +65,7 @@ box(760, 650, 160, 80, ["retrieve.py", "lexical score +", "superseded rerank"])
 box(960, 645, 260, 92, ["Sample probability notes", "5 files · 11 passages", "source · section · date", "(written for this project)"], kind="file")
 # planned band
 box(190, 800, 300, 62, ["Planned: model-based", "question interpretation (+ same correction)"], kind="plan")
-box(760, 800, 460, 62, ["Planned: real course notes with embedding retrieval;", "user study of error detection and reliance"], kind="plan")
+box(760, 800, 460, 62, ["Planned: real course notes with embedding retrieval;", "replay evaluation with seeded wrong answers (no participants)"], kind="plan")
 box(1510, 800, 180, 62, ["Planned: tutor review", "of feedback_log reports"], kind="plan")
 
 # arrows
