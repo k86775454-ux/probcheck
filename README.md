@@ -1,7 +1,7 @@
 # ProbCheck: an evidence-checking study assistant for probability
 
 Intelligent Interactive Systems · A2 project · student 3098204
-README prose: about 1,260 words (code blocks and commands not counted).
+README prose: about 1,350 words (code blocks and commands not counted).
 
 ProbCheck helps a first-year student decide whether to trust an explanation of a probability
 question. Each sentence of the answer links to the course-note passage it relies on. Numbers are
@@ -113,8 +113,11 @@ probability topics) and on simulating the language model. Later commits made wit
   appropriately on AI advice?). Claude proposed two changes, which this commit makes: each storyboard
   frame is now labelled implemented, fixed repair turn or simulated; and the planned user study in the
   system diagram became a replay evaluation without participants, as the module's examples use.
-- **My own changes and checks:** TODO (student): after running the app, list what you tried, what you
-  saw, and anything you changed, with the commit link.
+- **My own changes and checks (17 November):** I ran the app with the examples and my own inputs.
+  Pasting a whole question into the P(A∩B) correction field made the server return NaN, so the browser
+  could not read the reply and silently kept the old answer. I changed `from_fields` in `parse.py` to
+  report "must be a number such as 0.2.", re-ran the 25 tests and retried the input (commit `b9c2676`,
+  screenshot `docs/screenshots/fix_nonnumeric.png`).
 
 All 25 tests pass on the tagged version (`python -m unittest discover -s tests`).
 
@@ -132,8 +135,8 @@ All 25 tests pass on the tagged version (`python -m unittest discover -s tests`)
 - **What Claude checked:** it ran the test suite and self-tests and inspected every screenshot (this is
   how the hidden-form, ∩-glyph and wording bugs were found). It recomputed the example arithmetic and
   checked the references against the Lab 1 shortlist and the A1 sources.
-- **What I checked or changed:** TODO (student): one or two real examples, such as running the app with
-  your own questions, editing wording, or rejecting a suggestion.
+- **What I checked or changed:** I found the NaN bug above while testing. Claude diagnosed the cause and
+  told me which lines to change; I made the edit, tested it in the browser and committed it myself.
 
 ## Additional files
 
