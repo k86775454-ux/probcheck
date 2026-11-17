@@ -101,16 +101,17 @@ def from_fields(fields):
     """Build an interpretation from the correction form: the student's edit replaces the inference."""
     qtype = fields.get("question_type") if fields.get("question_type") in TYPES else "other"
     values = {}
+    problems = []
     for key in ("P(A)", "P(B)", "P(A∩B)", "P(A|B)", "P(A∪B)"):
         raw = str(fields.get("values", {}).get(key, "")).strip()
         if raw:
             try:
                 values[key] = round(_value(raw), 6)
             except ValueError:
-                values[key] = float("nan")
+                problems.append("%s must be a number such as 0.2." % key)
     interp = {"question_type": qtype, "question_label": TYPES[qtype], "events": "A and B",
               "referent_clear": True, "mutually_exclusive": qtype in ("exclusive_and_independent", "exclusive")
-              or bool(fields.get("mutually_exclusive")), "values": values, "problems": [], "corrected": True}
+              or bool(fields.get("mutually_exclusive")), "values": values, "problems": problems, "corrected": True}
     for key, v in values.items():
         if v != v or not 0 <= v <= 1:
             interp["problems"].append("%s is not a probability between 0 and 1." % key)
