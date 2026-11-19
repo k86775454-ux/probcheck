@@ -198,7 +198,7 @@ function showReport(d){
     if(c.supported){box.append("I rechecked this sentence. The notes contain: "+c.matched_terms.join(", ")+". ");
       if(c.numbers_from_calculation.length)box.append("The numbers "+c.numbers_from_calculation.join(", ")+" come from your values and the calculation, not from the notes. ");}
     else box.append("I rechecked it and could not support it ("+c.reason+"), so I removed it. ");
-    box.append("Your report is kept for the tutor to review; it does not change the notes or retrain anything.");}
+    box.append("Your report is saved in a local log (tutor review is planned, not built); it does not change the notes or retrain anything.");}
   (li||card).appendChild(box);
   if(li){const s=d.sentences[r.index]; if(s)showSource(s.passage_id,s.matched);}}
 

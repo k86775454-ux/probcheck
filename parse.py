@@ -45,6 +45,39 @@ def _grab(pattern, text):
     return _value(m.group(2)), text[:m.start()] + " " + text[m.end():]
 
 
+def check_values(values, exclusive=False):
+    """Problems with the numbers themselves, shared by the question parser and the correction form.
+
+    Each value must lie in [0, 1], and the values must fit together: P(A∩B) is at most P(A) and P(B)
+    and at least P(A) + P(B) - 1; P(A∪B) is at least P(A) and P(B) and at most P(A) + P(B);
+    mutually exclusive events have P(A∩B) = 0.
+    """
+    problems = []
+    for key, v in values.items():
+        if not 0 <= v <= 1:
+            problems.append("%s = %s is not a probability: it must be between 0 and 1." % (key, v))
+    if problems:
+        return problems
+    eps = 1e-9
+    a, b = values.get("P(A)"), values.get("P(B)")
+    ab, union = values.get("P(A∩B)"), values.get("P(A∪B)")
+    if ab is not None:
+        for key in ("P(A)", "P(B)"):
+            if key in values and ab > values[key] + eps:
+                problems.append("P(A∩B) cannot be larger than %s." % key)
+        if a is not None and b is not None and ab < a + b - 1 - eps:
+            problems.append("P(A∩B) must be at least P(A) + P(B) - 1 = %s." % round(a + b - 1, 6))
+        if exclusive and ab > eps:
+            problems.append("Mutually exclusive events have P(A∩B) = 0.")
+    if union is not None:
+        for key in ("P(A)", "P(B)"):
+            if key in values and union < values[key] - eps:
+                problems.append("P(A∪B) cannot be smaller than %s." % key)
+        if a is not None and b is not None and union > a + b + eps:
+            problems.append("P(A∪B) cannot be larger than P(A) + P(B).")
+    return problems
+
+
 def parse(question):
     q = question or ""
     rest = q
@@ -52,7 +85,7 @@ def parse(question):
     for key, pattern in (("P(A∩B)", JOINT), ("P(A|B)", COND), ("P(A∪B)", UNION),
                          ("P(A)", SINGLE["P(A)"]), ("P(B)", SINGLE["P(B)"])):
         v, rest = _grab(pattern, rest)
-        if v is not None:
+        if v is not None and v == v:
             values[key] = round(v, 6)
 
     low = q.lower()
@@ -79,13 +112,7 @@ def parse(question):
     pronoun = bool(re.search(PRONOUN, low))
     referent_clear = specific or generic or not pronoun
 
-    problems = []
-    for key, v in values.items():
-        if v != v or not 0 <= v <= 1:
-            problems.append("%s = %s is not a probability: it must be between 0 and 1." % (key, v))
-    if not problems and "P(A∩B)" in values and "P(A)" in values and "P(B)" in values:
-        if values["P(A∩B)"] > min(values["P(A)"], values["P(B)"]) + 1e-9:
-            problems.append("P(A∩B) cannot be larger than both P(A) and P(B).")
+    problems = check_values(values, exclusive)
 
     return {"question_type": qtype,
             "question_label": TYPES[qtype],
@@ -106,15 +133,17 @@ def from_fields(fields):
         raw = str(fields.get("values", {}).get(key, "")).strip()
         if raw:
             try:
-                values[key] = round(_value(raw), 6)
+                v = _value(raw)
             except ValueError:
+                v = float("nan")
+            if v == v:
+                values[key] = round(v, 6)
+            else:
                 problems.append("%s must be a number such as 0.2." % key)
     interp = {"question_type": qtype, "question_label": TYPES[qtype], "events": "A and B",
               "referent_clear": True, "mutually_exclusive": qtype in ("exclusive_and_independent", "exclusive")
               or bool(fields.get("mutually_exclusive")), "values": values, "problems": problems, "corrected": True}
-    for key, v in values.items():
-        if v != v or not 0 <= v <= 1:
-            interp["problems"].append("%s is not a probability between 0 and 1." % key)
+    interp["problems"] += check_values(values, interp["mutually_exclusive"])
     return interp
 
 
