@@ -1,25 +1,25 @@
 # ProbCheck: an evidence-checking study assistant for probability
 
 Intelligent Interactive Systems · A2 project · student 3098204
-README prose: about 1,560 words (code blocks and commands not counted).
+README prose: about 1,840 words (code blocks and commands not counted).
 
 ProbCheck helps a first-year student decide whether to trust an explanation of a probability
 question. Each sentence of the answer links to the course-note passage it relies on. Numbers are
 recalculated in code. A verbal cue says how far the answer was checked. When the question is
 ambiguous, the system asks instead of guessing.
 
-**Submitted version:** tag `v1.2-a2` (commit hash on the report's first page). Earlier tags: `v1.0-a2` (9 November baseline), `v1.1-a2` (17 November).
+**Submitted version:** tag `v1.3-a2` (commit hash on the report's first page). Earlier tags: `v1.0-a2` (9 November baseline), `v1.1-a2` (17 November), `v1.2-a2` (19 November).
 
 ## Project status
 
 | Part | Status |
 |---|---|
 | Question parsing with a visible, editable interpretation (`parse.py`) | Implemented (rule-based) |
-| Gate: clarify unclear events, reject impossible or inconsistent values (typed question and correction form), decline out-of-scope questions | Implemented |
+| Gate: clarify unclear events, reject impossible or inconsistent values (typed question and correction form; P(A∩B) = 0 is applied when events are mutually exclusive), decline out-of-scope questions | Implemented |
 | Deterministic checks: independence, mutually exclusive + independent, addition rule, conditional probability (`checker.py`) | Implemented |
 | Retrieval with source, section, date, score; superseded passages ranked last and labelled (`retrieve.py`) | Implemented |
 | Per-sentence screening of the model's wording: citation, current source, allowed numbers, word overlap (`verify.py`) | Implemented; does not check that the meaning is correct |
-| Page: uncertainty cue, one-click source highlight, correction form, mismatch report, removed-sentence list | Implemented |
+| Page: uncertainty cue ("Screened against the notes" states what the screening covers), one-click source highlight, correction form with a mutually-exclusive checkbox, mismatch report, removed-sentence list | Implemented |
 | Revision-slot tool with validation, confirmation and log (`tools.py`) | Implemented (carried over from Lab 4, now with a topic) |
 | Language model that words the checked facts | **Simulated** (`mock_model.py`); a live OpenAI-compatible route is wired in `model.py` but **not evaluated** |
 | Course notes | **Sample notes written for this project**, not real module material |
@@ -27,7 +27,8 @@ ambiguous, the system asks instead of guessing.
 
 Known limits: the parser only recognises the notation in the examples (P(A), P(B), P(A∩B), P(A|B),
 P(A∪B)); the app keeps one conversation in memory, so it is single-user; the word-overlap check in
-`verify.py` can be fooled by a sentence that reuses the passage's words with a different meaning.
+`verify.py` can be fooled by a sentence that reuses the passage's words with a different meaning
+(for example, a negation); values are read to six decimal places.
 
 ## Technology stack
 
@@ -65,6 +66,8 @@ python app.py
 
 Regenerate figures (needs `pip install playwright pillow` and Chrome): start the app on port 8765,
 then run `python scripts/frames.py docs/frames`, `python scripts/storyboards.py` and `python scripts/diagram.py`.
+The figures were made on Linux; elsewhere set `CHROME` to your Chrome binary. The diagram PNG is the SVG
+rendered in Chrome.
 
 ## Development record
 
@@ -129,8 +132,18 @@ record below says where Claude advised.
 - **My own wording fix (19 November):** while retesting, I noticed the message said "correct the values
   below" though the form is above it. I edited `app.py`, re-ran the tests and checked the page
   ([`f3bec15`](../../commit/f3bec15), `fix_wording.png`).
+- **Second review round (19 November, with Claude):** reviews by OpenAI Codex and ChatGPT found more
+  inputs still marked checked. I reproduced the worst: mutually exclusive events with P(A)=0.8 and
+  P(B)=0.7 gave P(A∪B) = 1.5 (`bug_exclusive_union.png`). Claude drafted the fixes: P(A∩B) = 0 is
+  applied in the checks, a given P(A∪B) or P(A|B) must match, negative, 1/0 and infinite values are
+  rejected, rounded results are shown with ≈ and accepted by the verifier (a correct 0.3333 sentence
+  had been removed), tiny probabilities are no longer read as zero, the form keeps "mutually
+  exclusive" as a checkbox, and the cue now says what screening covers. It regenerated the storyboards,
+  adding the student's triggering action to each, and the diagram. I ran all 44 tests and retried
+  three cases in the browser ([`b2b9ce8`](../../commit/b2b9ce8), `fix_exclusive_union.png`). A negated
+  sentence can still pass the word-overlap screen; the report states this limit.
 
-All 31 tests pass on the tagged version (`python -m unittest discover -s tests`).
+All 44 tests pass on the tagged version (`python -m unittest discover -s tests`).
 
 ## AI assistance
 
@@ -146,13 +159,18 @@ All 31 tests pass on the tagged version (`python -m unittest discover -s tests`)
 - **Review response (19 November):** Claude checked which bugs in two AI reviews were real on
   `v1.1-a2`, and drafted the consistency check, its tests, these entries and the messages of
   `ec28b79` and `f3bec15`.
+- **Second review response (19 November):** OpenAI Codex and ChatGPT were used only to review the
+  submission. Claude reproduced their cases on `v1.2-a2`, drafted the fixes and tests, regenerated the
+  figures, cropped the browser bar from `fix_nonnumeric.png`, and drafted these entries and the messages
+  of `b2b9ce8` and this README commit.
 - **What Claude checked:** it ran the test suite and self-tests and inspected every screenshot (this is
   how the hidden-form, ∩-glyph and wording bugs were found). It recomputed the example arithmetic and
   checked the references against the Lab 1 shortlist and the A1 sources.
 - **What I checked or changed:** I found the NaN bug above while testing. Claude diagnosed the cause and
   told me which lines to change; I made the edit, tested it in the browser and committed it myself.
   For the consistency fix I reproduced the bug first, then ran and retried Claude's change; the
-  wording fix was my own.
+  wording fix was my own. In the second round I reproduced the 1.5 case, then retried it, a rounded
+  P(A|B) and the form's checkbox after the fix.
 
 ## Additional files
 
