@@ -18,6 +18,7 @@ class AppTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         p = lambda n: os.path.join(self.tmp.name, n)
         self.patches = [patch.object(app, "FEEDBACK_LOG", p("feedback.jsonl")),
+                        patch.object(app, "CONTEXT_LOG", p("context.jsonl")),
                         patch.object(tools, "LOG", p("tool_log.jsonl")),
                         patch.object(tools, "SCHEDULE", p("schedule.json")),
                         patch.object(app, "today", lambda: datetime.date(2026, 11, 9))]
@@ -33,7 +34,8 @@ class AppTests(unittest.TestCase):
     def test_test_a_checked_with_sources_and_steps(self):
         d = turn(message=TEST_A)
         self.assertEqual("checked", d["status"])
-        self.assertIn("I checked", d["cue_text"])
+        self.assertIn("I screened", d["cue_text"])
+        self.assertIn("not the meaning", d["cue_text"])      # the cue must not overstate the check
         self.assertTrue(all(s["passage_id"] for s in d["sentences"]))
         ids = {e["id"] for e in d["evidence"]}
         self.assertTrue(all(s["passage_id"] in ids for s in d["sentences"]))

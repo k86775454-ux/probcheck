@@ -46,6 +46,8 @@ input,select{font:inherit;padding:9px;border:1px solid #b5c0cb;border-radius:7px
 .understood dd{margin:0}
 .val{display:inline-block;background:var(--greybg);border-radius:5px;padding:1px 6px;margin:1px 4px 1px 0;font-family:ui-monospace,Menlo,monospace;font-size:.82rem}
 .form{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;margin-top:8px}
+.form label.check{display:flex;align-items:center;gap:6px;font-size:.9rem}
+.form label.check input{width:auto;margin:0}
 .reply{font-size:1rem;line-height:1.5;margin:12px 0}
 ol.answer{margin:10px 0;padding-left:22px;line-height:1.5}
 ol.answer li{margin:6px 0}
@@ -133,7 +135,8 @@ function understood(d){
   const i=d.interpretation, box=el("div","understood");
   box.appendChild(el("strong","",i.corrected?"What I understood (corrected by you)":"What I understood"));
   const dl=el("dl");
-  dl.append(el("dt","","Question"),el("dd","",i.question_label),el("dt","","Events"),el("dd","",i.events));
+  dl.append(el("dt","","Question"),el("dd","",i.question_label),el("dt","","Events"),
+    el("dd","",i.events+(i.mutually_exclusive?" · mutually exclusive, so P(A∩B) = 0":"")));
   const vals=el("dd"); const keys=Object.keys(i.values);
   if(keys.length) keys.forEach(k=>vals.appendChild(el("span","val",k+" = "+i.values[k]))); else vals.textContent="none given";
   dl.append(el("dt","","Values"),vals); box.appendChild(dl);
@@ -148,9 +151,11 @@ function correctionForm(i){
   f.append(el("label","","Question"),sel); const inputs={};
   ["P(A)","P(B)","P(A∩B)"].forEach(k=>{const inp=el("input");inp.value=i.values[k]??"";inp.placeholder="leave blank if unknown";
     inp.setAttribute("aria-label",k);inputs[k]=inp;f.append(el("label","",k),inp);});
+  const ex=el("input");ex.type="checkbox";ex.id="excl";ex.checked=!!i.mutually_exclusive;   // keep this assumption visible
+  const exl=el("label","check");exl.append(ex," A and B are mutually exclusive");f.append(el("span"),exl);
   const go=el("button","primary","Check again"); go.onclick=()=>{const values={};for(const k in inputs)values[k]=inputs[k].value;
-    act({action:"correct",fields:{question_type:sel.value,values}},"Corrected: "+sel.options[sel.selectedIndex].text+" "+
-      Object.entries(values).filter(([k,v])=>v).map(([k,v])=>k+"="+v).join(", "));};
+    act({action:"correct",fields:{question_type:sel.value,values,mutually_exclusive:ex.checked}},"Corrected: "+sel.options[sel.selectedIndex].text+" "+
+      Object.entries(values).filter(([k,v])=>v).map(([k,v])=>k+"="+v).join(", ")+(ex.checked?" (mutually exclusive)":""));};
   f.append(el("span"),go); return f;}
 
 function render(d){
@@ -176,7 +181,7 @@ function render(d){
       li.append(src,rep);ol.appendChild(li);});card.appendChild(ol);}
   if(d.steps&&d.steps.length){card.appendChild(el("h3","","Calculation (done in code)"));card.appendChild(el("div","steps",d.steps.join("\n")));}
   if(d.removed&&d.removed.length){const det=el("details","removed");
-    det.appendChild(el("summary","","I removed "+d.removed.length+" sentence"+(d.removed.length>1?"s":"")+" I couldn't support"));
+    det.appendChild(el("summary","","I removed "+d.removed.length+" sentence"+(d.removed.length>1?"s":"")+" that failed my screening"));
     d.removed.forEach(r=>{const p=el("p");p.append(el("s","",r.text),el("br"),"Why: "+r.why);det.appendChild(p);});card.appendChild(det);}
   if(d.evidence&&d.evidence.length){card.appendChild(el("h3","","Course notes used"));
     d.evidence.forEach(e=>{const p=el("div","passage");p.dataset.id=e.id;p.dataset.text=e.text;

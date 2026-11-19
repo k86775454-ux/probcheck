@@ -53,7 +53,7 @@ box(xs[2], y, w, h, ["checker.py", "arithmetic and", "conditions in code;", "fac
 box(xs[3], y, w, h, ["Rule lookup", "each fact needs a", "current passage", "in its section"])
 box(xs[4], y, w, h, ["Context", "instructions · notes ·", "checked facts ·", "question; logged"])
 box(xs[5], y, w, h, ["Language model", "mock words the", "checked facts;", "overclaim switch"], kind="sim")
-box(xs[6], y, w, h, ["verify.py", "per sentence: source", "shown, current, numbers", "traceable, wording"])
+box(xs[6], y, w, h, ["verify.py", "screens each sentence:", "citation, current source,", "numbers, word overlap"])
 box(xs[5], 450, w, 70, ["Live LLM endpoint", "wired, not evaluated"], kind="plan")
 # right column
 box(1510, 290, 180, 54, ["Report + recheck", "never retrains"])
@@ -78,7 +78,7 @@ arrow([(455, 300), (500, 214)], "clarify · fix values · decline", 512, 262, ki
 for i, lab in enumerate(["interp.", "in scope", "rule ids", "facts", "context", "JSON"]):
     x1 = xs[i] + w; x2 = xs[i + 1]
     arrow([(x1, 346), (x2 - 4, 346)], lab, (x1 + x2) / 2, 338)
-arrow([(1405, 300), (1405, 250), (1120, 250), (1120, 214)], "verified sentences + removed list", 1262, 246)
+arrow([(1405, 300), (1405, 250), (1120, 250), (1120, 214)], "screened sentences + removed list", 1262, 246)
 S.append('<polyline points="645,392 645,420 1100,420" fill="none" stroke="#4a5562" stroke-width="1.6"/>')
 arrow([(1100, 420), (1405, 420), (1405, 396)], "numbers for the check", 1250, 433)
 arrow([(835, 392), (835, 646)], "rule query ↓  passage + id ↑\n(score ≥ 0.25)", 845, 600, both=True, anchor="start")

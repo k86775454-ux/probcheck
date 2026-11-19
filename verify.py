@@ -3,10 +3,14 @@
 A schema guarantees shape, not truth (Lecture 09), so each sentence is checked in code:
   1. it points to a passage that is shown on the page;
   2. that passage is current, not superseded;
-  3. every number in it comes from the student's values, the calculation, or the passage;
+  3. every number in it comes from the student's values, the calculation, or the passage
+     (a calculated number may appear rounded to four decimals, as the page shows it);
   4. enough of its wording appears in that passage.
 A sentence that fails is removed and listed with the reason, never shown as part of the answer.
+These checks screen support; they do not prove the meaning: a sentence that reuses a passage's
+words with the opposite meaning (for example, a negation) can still pass.
 """
+import math
 import re
 
 STOP = set("a an and are as at be because both but by can cannot for from has have here if in is it "
@@ -16,7 +20,13 @@ STOP = set("a an and are as at be because both but by can cannot for from has ha
 def numbers_in(text):
     # ignore section numbers such as 2.3 when they follow the word "section"
     text = re.sub(r"section\s+\d+(\.\d+)*", " ", text, flags=re.I)
-    return [float(x) for x in re.findall(r"(?<![A-Za-z])\d*\.?\d+", text)]
+    return [float(x) for x in re.findall(r"(?<![A-Za-z])\d*\.?\d+(?:e-?\d+)?", text)]
+
+
+def number_allowed(n, allowed):
+    """Exact match, or the four-decimal rounding the page uses for calculated values."""
+    return any(math.isclose(n, a, rel_tol=1e-9, abs_tol=1e-12) or abs(n - round(a, 4)) < 1e-9
+               for a in allowed)
 
 
 def content_words(text):
@@ -37,7 +47,7 @@ def check_sentence(sentence, evidence_by_id, allowed_numbers):
         return False, "it relies on superseded notes (%s)" % passage["source"], []
     allowed = list(allowed_numbers) + numbers_in(passage["text"]) + [0.0, 1.0]
     for n in numbers_in(sentence.get("text", "")):
-        if not any(abs(n - a) < 1e-6 for a in allowed):
+        if not number_allowed(n, allowed):
             return False, "the number %g is not in your values, the calculation or the passage" % n, []
     matched = sorted(content_words(sentence.get("text", "")) & content_words(passage["text"]))
     if len(matched) < 2:

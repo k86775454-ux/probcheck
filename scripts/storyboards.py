@@ -48,17 +48,20 @@ def board(name, title, frames, cols=2):
     B.save(os.path.join(OUT, name)); print(name, B.size)
 
 board("storyboard1_checked_answer.png", "Storyboard 1 · A checked answer the student can verify", [
-    ("Student", "Asks with values; scope shown first", "f1_1_ask.png", "impl"),
+    ("Student", "Asks with P(A) and P(B); scope shown first", "f1_1_ask.png", "impl"),
     ("System", "Cue, interpretation, cited sentences, calculation", "f1_2_answer.png", "sim"),
     ("Student", "Clicks '§2.3 source' on sentence 3", "f1_3_source.png", "impl"),
     ("System", "Passage highlighted: words that matched", "f1_3b_passage.png", "impl"),
     ("System", "Proposes revision slot; arguments shown", "f1_4_confirm.png", "impl"),
     ("Student", "Confirms; result read from the tool", "f1_5_done.png", "impl")])
 board("storyboard2_clarify_correct.png", "Storyboard 2 · An ambiguous question is clarified, not guessed", [
+    ("Student", "Asks: 'Are they independent? I don't have the numbers.'", "f2_0_ask.png", "impl"),
     ("System", "Unclear 'they': asks, offers three options", "f2_1_clarify.png", "gate"),
     ("Student", "Chooses to enter values; corrects details", "f2_2_correct.png", "impl"),
     ("System", "Checks the corrected values", "f2_3_checked.png", "sim")])
-board("storyboard3_failure_recovery.png", "Storyboard 3 · Unsupported claims are caught and reported", [
+board("storyboard3_failure_recovery.png",
+      "Storyboard 3 · Unsupported claims are caught and reported; a new out-of-scope question is declined", [
+    ("Student", "Ticks the demo switch, then asks", "f3_0_ask.png", "impl"),
     ("System", "Demo overclaim: two sentences removed", "f3_1_removed.png", "demo"),
     ("Student", "Reports sentence 3; system rechecks", "f3_2_report.png", "impl"),
-    ("System", "Outside the notes: declines, hands over", "f3_3_decline.png", "gate")])
+    ("System", "New question 'What is a Markov chain?': declined", "f3_3_decline.png", "gate")])

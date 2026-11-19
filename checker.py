@@ -7,6 +7,7 @@ rule it depends on; find_support() then looks that rule up in the notes. A fact 
 be found in a current passage is not allowed into the answer.
 """
 import json
+import math
 import sys
 
 import retrieve
@@ -30,7 +31,21 @@ RULES = {
 
 
 def fmt(x):
-    return ("%.4f" % x).rstrip("0").rstrip(".") if x == x else "undefined"
+    """How a number is shown: four decimals, or three significant figures for tiny values."""
+    if x != x:
+        return "undefined"
+    if 0 < abs(x) < 1e-4:
+        return "%.3g" % x
+    return ("%.4f" % x).rstrip("0").rstrip(".")
+
+
+def eq(x):
+    """'=' when the shown number is exact, '≈' when fmt() rounded it (for example 0.1 / 0.3)."""
+    return "=" if math.isclose(float(fmt(x)), x, rel_tol=1e-9, abs_tol=1e-15) else "≈"
+
+
+def same(x, y):
+    return math.isclose(x, y, rel_tol=1e-9, abs_tol=1e-15)
 
 
 def find_support(rule):
@@ -76,13 +91,13 @@ def check(interp):
         prod = a * b
         out["numbers"] = [a, b, prod, 0]
         out["steps"] = ["Mutually exclusive: P(A∩B) = 0",
-                        "Independent would need: P(A)P(B) = %s × %s = %s" % (fmt(a), fmt(b), fmt(prod)),
-                        "0 %s %s" % ("=" if abs(prod) < EPS else "≠", fmt(prod))]
-        if prod > EPS:
+                        "Independent would need: P(A)P(B) = %s × %s %s %s" % (fmt(a), fmt(b), eq(prod), fmt(prod)),
+                        "0 %s %s" % ("=" if prod == 0 else "≠", fmt(prod))]
+        if a > 0 and b > 0:      # decide on the inputs, not on whether a tiny product looks like zero
             out["facts"].append(_fact("excl_pos_not_indep",
-                "With P(A) = %s and P(B) = %s, both events have positive probability, so P(A)P(B) = %s "
+                "With P(A) = %s and P(B) = %s, both events have positive probability, so P(A)P(B) %s %s "
                 "while P(A∩B) = 0: they cannot be both mutually exclusive and independent."
-                % (fmt(a), fmt(b), fmt(prod))))
+                % (fmt(a), fmt(b), eq(prod), fmt(prod))))
             out["verdict"] = "not independent"
         else:
             out["facts"].append(_fact("excl_zero_indep",
@@ -103,15 +118,15 @@ def check(interp):
             out["needs"] = missing if out["status"] == "depends" else []
             return out
         prod = a * b
-        same = abs(prod - ab) < EPS
+        indep = same(prod, ab)
         out["numbers"] = [a, b, ab, prod]
-        out["steps"] = ["P(A)P(B) = %s × %s = %s" % (fmt(a), fmt(b), fmt(prod)),
+        out["steps"] = ["P(A)P(B) = %s × %s %s %s" % (fmt(a), fmt(b), eq(prod), fmt(prod)),
                         "P(A∩B) = %s" % fmt(ab),
-                        "%s %s %s" % (fmt(ab), "=" if same else "≠", fmt(prod))]
+                        "%s %s %s" % (fmt(ab), "=" if indep else "≠", fmt(prod))]
         out["facts"].append(_fact("def_independent",
-            "Here P(A)P(B) = %s and P(A∩B) = %s, so A and B are %s."
-            % (fmt(prod), fmt(ab), "independent" if same else "not independent")))
-        out["verdict"] = "independent" if same else "not independent"
+            "Here P(A)P(B) %s %s and P(A∩B) = %s, so A and B are %s."
+            % (eq(prod), fmt(prod), fmt(ab), "independent" if indep else "not independent")))
+        out["verdict"] = "independent" if indep else "not independent"
         return out
 
     if t == "conditional":
@@ -122,16 +137,16 @@ def check(interp):
             out["status"] = "depends" if len(missing) < 2 else "checked"
             out["needs"] = missing if out["status"] == "depends" else []
             return out
-        if b < EPS:
+        if b == 0:
             out["steps"] = ["P(B) = 0, so P(A∩B) / P(B) is undefined"]
             out["facts"].append(_fact("conditional_def", "Because P(B) = 0, P(A|B) is not defined."))
             out["verdict"] = "undefined"
             return out
         val = ab / b
         out["numbers"] = [ab, b, val]
-        out["steps"] = ["P(A|B) = P(A∩B) / P(B) = %s / %s = %s" % (fmt(ab), fmt(b), fmt(val))]
-        out["facts"].append(_fact("conditional_def", "So the conditional probability is P(A|B) = P(A∩B) / P(B) = %s / %s = %s."
-                                  % (fmt(ab), fmt(b), fmt(val))))
+        out["steps"] = ["P(A|B) = P(A∩B) / P(B) = %s / %s %s %s" % (fmt(ab), fmt(b), eq(val), fmt(val))]
+        out["facts"].append(_fact("conditional_def", "So the conditional probability is P(A|B) = P(A∩B) / P(B) = %s / %s %s %s."
+                                  % (fmt(ab), fmt(b), eq(val), fmt(val))))
         out["verdict"] = fmt(val)
         return out
 
@@ -149,13 +164,13 @@ def check(interp):
             return out
         val = a + b - ab
         out["numbers"] = [a, b, ab, val]
-        out["steps"] = ["P(A∪B) = P(A) + P(B) − P(A∩B) = %s + %s − %s = %s" % (fmt(a), fmt(b), fmt(ab), fmt(val))]
+        out["steps"] = ["P(A∪B) = P(A) + P(B) − P(A∩B) = %s + %s − %s %s %s" % (fmt(a), fmt(b), fmt(ab), eq(val), fmt(val))]
         if interp.get("mutually_exclusive"):
             out["facts"].append(_fact("addition_exclusive", "So for these mutually exclusive events, "
-                                      "P(A∪B) = P(A) + P(B) = %s + %s = %s." % (fmt(a), fmt(b), fmt(val))))
+                                      "P(A∪B) = P(A) + P(B) = %s + %s %s %s." % (fmt(a), fmt(b), eq(val), fmt(val))))
         else:
             out["facts"].append(_fact("addition_general", "So by the addition rule, P(A∪B) = P(A) + P(B) − "
-                                      "P(A∩B) = %s + %s − %s = %s." % (fmt(a), fmt(b), fmt(ab), fmt(val))))
+                                      "P(A∩B) = %s + %s − %s %s %s." % (fmt(a), fmt(b), fmt(ab), eq(val), fmt(val))))
         out["verdict"] = fmt(val)
         return out
 

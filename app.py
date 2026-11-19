@@ -7,7 +7,7 @@ Everything runs offline with the simulated model; see model.py for the optional 
 One turn:
   parse the question  ->  gate: invalid / unclear / out of scope are answered by fixed repair turns
   ->  checker computes the result and lists facts  ->  each fact is looked up in the notes
-  ->  the model words the supported facts (context logged)  ->  verify.py checks every sentence
+  ->  the model words the supported facts (context logged)  ->  verify.py screens every sentence
   ->  the page shows a verbal uncertainty cue, what was understood, the sentences with one-click
       sources, the calculation, and the passages with their dates.
 """
@@ -28,6 +28,7 @@ import tools  # noqa: E402
 import verify  # noqa: E402
 
 FEEDBACK_LOG = os.path.join(HERE, "feedback_log.jsonl")
+CONTEXT_LOG = os.path.join(HERE, "context_log.jsonl")
 SCHEMA = {"sentences": list}
 LAST = {}            # the last answer, so a report or a revision slot refers to what is on screen
 PENDING_TOOL = None
@@ -43,8 +44,10 @@ SCOPE = ("I can check questions about mutually exclusive events, the addition ru
          "and conditional probability against the course notes.")
 
 CUES = {
-    "checked": ("Checked against the notes",
-                "I checked each sentence below against the course notes{calc}."),
+    "checked": ("Screened against the notes",
+                "I screened each sentence below against the course-note passage it cites{calc}. "
+                "Screening checks the citation, its date, the numbers and shared wording, not the "
+                "meaning, so open a source if in doubt."),
     "depends": ("Depends on details you haven't given",
                 "I'm not sure how this applies to your events: the answer depends on {needs}. "
                 "The rule below is checked; applying it to your events is not."),
@@ -55,14 +58,19 @@ CUES = {
     "cannot_check": ("Not checked: outside the notes",
                      "I couldn't find this in the course notes, so I can't check an answer for you."),
     "unsupported": ("Only the calculation is checked",
-                    "I couldn't support the written explanation, so I'm only showing the checked calculation."),
+                    "No sentence of the written explanation passed my screening, so I'm only showing the "
+                    "calculation done in code."),
     "error": ("No answer: model reply unreadable",
               "I couldn't read the model's reply, so I haven't shown an answer."),
 }
 
 
 def log_context(parts):
-    """Lecture 10: record exactly what was sent, so missing or buried evidence can be told apart."""
+    """Lecture 10: record exactly what was sent, so missing or buried evidence can be told apart.
+    The full context goes to context_log.jsonl (not committed); the terminal shows a preview."""
+    with open(CONTEXT_LOG, "a", encoding="utf-8") as f:
+        f.write(json.dumps({"t": datetime.datetime.now().isoformat(timespec="seconds"), "parts": parts},
+                           ensure_ascii=False) + "\n")
     for part in parts:
         print("CONTEXT:", json.dumps(part, ensure_ascii=False)[:300], flush=True)
 
@@ -281,7 +289,8 @@ class Handler(BaseHTTPRequestHandler):
             if not isinstance(payload, dict):
                 raise ValueError("expected a JSON object")
             result = handle(payload)
-            self._send(200, json.dumps(result, ensure_ascii=False).encode("utf-8"))
+            # allow_nan=False: a NaN or infinity must never reach the page as invalid JSON
+            self._send(200, json.dumps(result, ensure_ascii=False, allow_nan=False).encode("utf-8"))
         except (ValueError, UnicodeDecodeError) as exc:
             self._send(400, json.dumps({"error": str(exc)}).encode("utf-8"))
 

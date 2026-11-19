@@ -7,10 +7,11 @@ and can be edited (Correct these details). Nothing here decides the answer: it o
 question type, which events are meant and which probabilities were given, and lists problems.
 """
 import json
+import math
 import re
 import sys
 
-NUM = r"(\d+(?:\.\d+)?\s*%|\d+\s*/\s*\d+|\d*\.\d+|\d+)"
+NUM = r"(-?\s*\d+(?:\.\d+)?\s*%|-?\s*\d+\s*/\s*\d+|-?\s*\d*\.\d+|-?\s*\d+)"   # a minus sign is read, then rejected
 JOINT = r"P\s*\(\s*A\s*(?:∩|n|and|&|∧|,)\s*B\s*\)|P\s*\(\s*AB\s*\)"
 COND = r"P\s*\(\s*A\s*\|\s*B\s*\)"
 UNION = r"P\s*\(\s*A\s*(?:∪|u|or|∨)\s*B\s*\)"
@@ -45,12 +46,20 @@ def _grab(pattern, text):
     return _value(m.group(2)), text[:m.start()] + " " + text[m.end():]
 
 
+def _n(x):
+    return ("%.6f" % x).rstrip("0").rstrip(".")
+
+
+TOL = 5e-4   # a value the student gives for P(A∪B) or P(A|B) may be rounded to three decimals
+
+
 def check_values(values, exclusive=False):
     """Problems with the numbers themselves, shared by the question parser and the correction form.
 
     Each value must lie in [0, 1], and the values must fit together: P(A∩B) is at most P(A) and P(B)
-    and at least P(A) + P(B) - 1; P(A∪B) is at least P(A) and P(B) and at most P(A) + P(B);
-    mutually exclusive events have P(A∩B) = 0.
+    and at least P(A) + P(B) - 1; mutually exclusive events have P(A∩B) = 0, which applies even when
+    P(A∩B) is not typed (so P(A) + P(B) must be at most 1); and a given P(A∪B) or P(A|B) must match
+    what the other values imply.
     """
     problems = []
     for key, v in values.items():
@@ -61,12 +70,19 @@ def check_values(values, exclusive=False):
     eps = 1e-9
     a, b = values.get("P(A)"), values.get("P(B)")
     ab, union = values.get("P(A∩B)"), values.get("P(A∪B)")
+    implied = ab is None and exclusive          # mutually exclusive: P(A∩B) = 0 even if not typed
+    if implied:
+        ab = 0.0
     if ab is not None:
         for key in ("P(A)", "P(B)"):
             if key in values and ab > values[key] + eps:
                 problems.append("P(A∩B) cannot be larger than %s." % key)
         if a is not None and b is not None and ab < a + b - 1 - eps:
-            problems.append("P(A∩B) must be at least P(A) + P(B) - 1 = %s." % round(a + b - 1, 6))
+            if implied:
+                problems.append("Mutually exclusive events need P(A) + P(B) ≤ 1, but here "
+                                "P(A) + P(B) = %s." % _n(a + b))
+            else:
+                problems.append("P(A∩B) must be at least P(A) + P(B) - 1 = %s." % _n(a + b - 1))
         if exclusive and ab > eps:
             problems.append("Mutually exclusive events have P(A∩B) = 0.")
     if union is not None:
@@ -75,18 +91,28 @@ def check_values(values, exclusive=False):
                 problems.append("P(A∪B) cannot be smaller than %s." % key)
         if a is not None and b is not None and union > a + b + eps:
             problems.append("P(A∪B) cannot be larger than P(A) + P(B).")
+        elif None not in (a, b, ab) and abs(union - (a + b - ab)) > TOL:
+            problems.append("P(A∪B) = %s does not match P(A) + P(B) - P(A∩B) = %s."
+                            % (_n(union), _n(a + b - ab)))
+    cond = values.get("P(A|B)")
+    if cond is not None and ab is not None and b is not None and b > 0 and abs(cond - ab / b) > TOL:
+        problems.append("P(A|B) = %s does not match P(A∩B) / P(B) = %s." % (_n(cond), _n(ab / b)))
     return problems
 
 
 def parse(question):
     q = question or ""
     rest = q
-    values = {}
+    values, unreadable = {}, []
     for key, pattern in (("P(A∩B)", JOINT), ("P(A|B)", COND), ("P(A∪B)", UNION),
                          ("P(A)", SINGLE["P(A)"]), ("P(B)", SINGLE["P(B)"])):
         v, rest = _grab(pattern, rest)
-        if v is not None and v == v:
+        if v is None:
+            continue
+        if math.isfinite(v):
             values[key] = round(v, 6)
+        else:
+            unreadable.append("%s is not a number I can use (for example, 1/0)." % key)
 
     low = q.lower()
     exclusive = bool(re.search(r"mutually exclusive|disjoint|\bexclusive\b", low))
@@ -112,7 +138,7 @@ def parse(question):
     pronoun = bool(re.search(PRONOUN, low))
     referent_clear = specific or generic or not pronoun
 
-    problems = check_values(values, exclusive)
+    problems = unreadable + check_values(values, exclusive)
 
     return {"question_type": qtype,
             "question_label": TYPES[qtype],
@@ -134,9 +160,9 @@ def from_fields(fields):
         if raw:
             try:
                 v = _value(raw)
-            except ValueError:
+            except (ValueError, ZeroDivisionError):
                 v = float("nan")
-            if v == v:
+            if math.isfinite(v):          # rejects NaN, inf and 1/0, which JSON cannot carry
                 values[key] = round(v, 6)
             else:
                 problems.append("%s must be a number such as 0.2." % key)

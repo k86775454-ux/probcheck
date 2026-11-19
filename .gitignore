@@ -1,5 +1,6 @@
 schedule.json
 feedback_log.jsonl
+context_log.jsonl
 __pycache__/
 *.pyc
 .DS_Store

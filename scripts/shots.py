@@ -1,10 +1,10 @@
-import sys, time
+import os, sys, time
 from playwright.sync_api import sync_playwright
 OUT = sys.argv[1]; URL = "http://localhost:8765/"
 def shot(page, name, full=False):
     page.wait_for_timeout(400); page.screenshot(path=f"{OUT}/{name}.png", full_page=full)
 with sync_playwright() as p:
-    b = p.chromium.launch(executable_path="/usr/bin/google-chrome", args=["--no-sandbox"])
+    b = p.chromium.launch(executable_path=os.environ.get("CHROME", "/usr/bin/google-chrome"), args=["--no-sandbox"])
     page = b.new_page(viewport={"width": 1400, "height": 1000}, device_scale_factor=1.5)
     page.on("console", lambda m: print("console:", m.text))
     page.on("pageerror", lambda e: print("pageerror:", e))
