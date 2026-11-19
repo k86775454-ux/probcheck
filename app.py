@@ -97,7 +97,7 @@ def answer(question, interp, overclaim=False):
     # ---- repair turns written in advance (Lecture 07): no model call ----
     if status == "invalid":
         data = _base("invalid", interp, question, needs=result["needs"])
-        data["reply"] = " ".join(result["needs"]) + " Please correct the values below."
+        data["reply"] = " ".join(result["needs"]) + " Please correct the values in the form above."
         hit = checker.find_support("bounds")
         data["evidence"] = [_public(hit)] if hit else []
         data["open_correction"] = True
