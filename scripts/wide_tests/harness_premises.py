@@ -179,10 +179,20 @@ for _ in range(int(os.environ.get("CASES", 25000))):
                 or ("independent" in lead and None not in (va, vb) and math.isclose(vab, va * vb, rel_tol=1e-9, abs_tol=0.0))):
             if d["status"] != "invalid":
                 FAIL.append(("contradicted 'not' premise accepted", q, d["status"]))
+            # resubmitting the form unchanged keeps the stated "not ..." and so stays rejected
+            same = {"question_type": seen_q, "mutually_exclusive": bool(i.get("mutually_exclusive")),
+                    "independent": bool(i.get("independent")),
+                    "not_mutually_exclusive": bool(i.get("not_mutually_exclusive")),
+                    "not_independent": bool(i.get("not_independent")),
+                    "values": {k: repr(i["values"][k]) if k in i["values"] else ""
+                               for k in ("P(A)", "P(B)", "P(A∩B)", "P(A∪B)", "P(A|B)")}}
+            if handle({"action": "correct", "fields": same})["status"] != "invalid":
+                FAIL.append(("form resubmission dropped the 'not' premise", q))
             continue
     check(q, d, seen_q, fv, i.get("mutually_exclusive"), indep)
     # resubmitting the form unchanged must give the same outcome
     fields = {"question_type": seen_q, "mutually_exclusive": bool(i.get("mutually_exclusive")), "independent": bool(i.get("independent")),
+              "not_mutually_exclusive": bool(i.get("not_mutually_exclusive")), "not_independent": bool(i.get("not_independent")),
               "values": {k: repr(i["values"][k]) if k in i["values"] else "" for k in ("P(A)", "P(B)", "P(A∩B)", "P(A∪B)", "P(A|B)")}}
     d2 = handle({"action": "correct", "fields": fields})
     if (d2["status"], d2.get("verdict")) != (d["status"], d.get("verdict")):

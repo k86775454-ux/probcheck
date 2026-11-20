@@ -160,10 +160,18 @@ function correctionForm(i){
   const exl=el("label","check");exl.append(ex," A and B are mutually exclusive (given)");f.append(el("span"),exl);
   const ind=el("input");ind.type="checkbox";ind.id="indep";ind.checked=!!i.independent;
   const indl=el("label","check");indl.append(ind," A and B are independent (given)");f.append(el("span"),indl);
+  const neg={};                                   // a stated "not ..." is kept, and shown, until it is unticked
+  [["not_mutually_exclusive","A and B are not mutually exclusive (you said so)"],
+   ["not_independent","A and B are not independent (you said so)"]].forEach(([k,t])=>{if(!i[k])return;
+    const c=el("input");c.type="checkbox";c.id=k;c.checked=true;neg[k]=c;
+    const l=el("label","check");l.append(c," "+t);f.append(el("span"),l);});
   const go=el("button","primary","Check again"); go.onclick=()=>{const values={};for(const k in inputs)values[k]=inputs[k].value;
-    act({action:"correct",fields:{question_type:sel.value,values,mutually_exclusive:ex.checked,independent:ind.checked}},
+    const kept=k=>!!(neg[k]&&neg[k].checked);
+    act({action:"correct",fields:{question_type:sel.value,values,mutually_exclusive:ex.checked,independent:ind.checked,
+                                 not_mutually_exclusive:kept("not_mutually_exclusive"),not_independent:kept("not_independent")}},
       "Corrected: "+sel.options[sel.selectedIndex].text+" "+Object.entries(values).filter(([k,v])=>v).map(([k,v])=>k+"="+v).join(", ")
-      +(ex.checked?" (mutually exclusive)":"")+(ind.checked?" (independent)":""));};
+      +(ex.checked?" (mutually exclusive)":"")+(ind.checked?" (independent)":"")
+      +(kept("not_mutually_exclusive")?" (not mutually exclusive)":"")+(kept("not_independent")?" (not independent)":""));};
   f.append(el("span"),go); return f;}
 
 function render(d){

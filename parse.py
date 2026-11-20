@@ -32,6 +32,8 @@ PRONOUN = r"\b(they|them|these|those|it|this one|both)\b"
 # "not mutually exclusive", "aren't disjoint": a negation must not switch the assumption on
 NOT_EXCLUSIVE = r"(?:\bnot\b|n't\b|\bnever\b)\s+(?:\w+\s+){0,2}?(?:mutually\s+exclusive|disjoint|exclusive)"
 NOT_INDEPENDENT = r"(?:\bnot\b|n't\b|\bnever\b)\s+(?:\w+\s+){0,2}?independent"
+# "dependent" means "not independent", and "not dependent" means "independent"
+NOT_DEPENDENT = r"(?:\bnot\b|n't\b|\bnever\b)\s+(?:\w+\s+){0,2}?\bdependent\b"
 # The quantity asked for: "What is P(A∪B)?", "find P(A|B)", or "P(A or B)?" with no value after it.
 TARGET = (r"(?:what\s+is|what's|find|compute|calculate|work\s+out)\s+(?:the\s+(?:probability|value)\s+(?:of\s+)?)?"
           r"(Pr?\s*\([^)=]*\))|(Pr?\s*\([^)=]*\))\s*=?\s*\?")
@@ -42,7 +44,7 @@ BARE = r"(?:^|[.!?;,]\s*)"                      # a bare question such as "... P
 ASKED_EXCLUSIVE = (r"\b(?:are|is|can|could)\s+" + SUBJECT + r"\s+(?:\w+\s+)?(?:mutually\s+exclusive|disjoint)"
                    + "|" + BARE + r"(?:mutually\s+exclusive|disjoint)\s*\?")
 ASKED_INDEPENDENT = (r"\b(?:are|is|can|could)\s+" + SUBJECT + r"\s+(?:\w+\s+)?(?:in)?dependent"
-                     r"|\bis\s+a\s+(?:\w+\s+)?(?:in)?dependent\s+(?:of|from)\s+b\b"
+                     r"|\bis\s+a\s+(?:\w+\s+)?(?:in)?dependent\s+(?:of|from|on)\s+b\b"
                      + "|" + BARE + r"(?:in)?dependent\s*\?")
 # The quantity asked for in words: "the probability of A or B", "... that both A and B occur", "... of A given B"
 WORD_TARGET = (("union", r"probability\s+(?:of|that)\s+(?:either\s+)?a\s+or\s+b\b"),
@@ -50,6 +52,18 @@ WORD_TARGET = (("union", r"probability\s+(?:of|that)\s+(?:either\s+)?a\s+or\s+b\
                ("conditional", r"probability\s+(?:of|that)\s+a\s+(?:\w+\s+)?given\s+(?:that\s+)?b\b"))
 # Words inside P(...) that are operators, not events: P(A and B), P(A n B), P(A u B), P(A^c)
 OPERATORS = {"and", "or", "not", "given", "intersect", "intersection", "union", "cap", "cup", "n", "u", "c"}
+# Phrases in which a capital letter can only name an event, so "I" and "P" count there too:
+# "Are I and B independent?", "I and B are ...", "independent of P", "event P", "the probability of I or B"
+EVENT_PHRASES = (
+    r"\b(?i:are|is|were|was|can|could|be|whether|if|that|both|either|events?)\s+"
+    r"([A-Z])\s*(?:and|or|&|,)\s*([A-Z])\b",
+    r"\b([A-Z])\s*(?:and|or|&|,)\s*([A-Z])\s+(?:are|were|be|is|can|could|independent|dependent|mutually|"
+    r"disjoint|exclusive)\b",
+    r"\b(?:independent|dependent|exclusive|disjoint)\s+(?:of|from|with)\s+([A-Z])\b",
+    r"\b([A-Z])\s+(?:is\s+|are\s+)?(?:in)?dependent\s+(?:of|from)\b",
+    r"\b(?i:events?)\s+([A-Z])\b",
+    r"\b(?i:probability\s+(?:of|that)\s+(?:both\s+|either\s+)?)([A-Z])\s+(?:and|or|given)\s+(?:that\s+)?([A-Z])\b",
+)
 
 TYPES = {
     "exclusive_and_independent": "Can mutually exclusive events also be independent?",
@@ -74,9 +88,9 @@ def _value(text):
 
 def _named_events(q):
     """Every event letter the question names, so that "Are C and D independent?" is never answered
-    about A and B. Letters are read in P(...) in any case; in words, single capital letters count
-    ("a" stays an article and "I" a pronoun, unless it is clearly an event: "Are A and I independent?"),
-    and so do lower-case pairs such as "c and d"."""
+    about A and B. Letters are read in P(...) in any case. In words, any single capital letter counts
+    except "I" (a pronoun) and "P" (as in "find P"), and those two count too in a phrase where only an
+    event fits (EVENT_PHRASES). Lower-case pairs such as "c and d" count as well."""
     names = set()
     for inside in re.findall(r"\bPr?\s*\(([^()]*)\)", q, flags=re.I):
         for token in re.findall(r"[A-Za-z]+", inside):
@@ -86,9 +100,9 @@ def _named_events(q):
                 names.update(token.upper())
     words = re.sub(r"\bPr?\s*\([^()]*\)", " ", q, flags=re.I)
     names.update(re.findall(r"\b([A-HJ-OQ-Z])\b(?!\s*[:)])", words))     # not "Q:" or "c)"
-    if re.search(r"\b(?:events?|of|from|and|or)\s+I\b(?=\s*(?:[?.,;!]|$|are\b|is\b|independent|mutually|disjoint))",
-                 words):
-        names.add("I")
+    for pattern in EVENT_PHRASES:
+        for found in re.findall(pattern, words):
+            names.update(found if isinstance(found, tuple) else (found,))
     for x, y in re.findall(r"\b([a-z])\s+(?:and|or|given|,)\s+([a-z])\b", words) + re.findall(
             r"\b([a-z])\s+(?:is\s+)?(?:in)?dependent\s+(?:of|from)\s+([a-z])\b", words):
         names.update({x.upper(), y.upper()})
@@ -264,8 +278,8 @@ def _negations(values, exclusive, not_exclusive, not_independent):
     if not_exclusive and ab == 0:
         return ["You said A and B are not mutually exclusive, but with these values P(A∩B) = 0."]
     if not_independent and None not in (a, b) and math.isclose(ab, a * b, rel_tol=1e-9, abs_tol=0.0):
-        return ["You said A and B are not independent, but with these values P(A∩B) = P(A)P(B) = %s."
-                % _n(ab)]
+        return ["You said A and B are not independent (dependent), but with these values "
+                "P(A∩B) = P(A)P(B) = %s." % _n(ab)]
     return []
 
 
@@ -401,8 +415,11 @@ def parse(question):
     exclusive = bool(re.search(r"mutually exclusive|disjoint|\bexclusive\b", low)) and not negated
     asked_exclusive = bool(re.search(ASKED_EXCLUSIVE, low))
     independent = "independen" in low
-    about_independence = independent or bool(re.search(r"\bdependent\b", low))   # for the question type only
-    not_independent = bool(re.search(NOT_INDEPENDENT, low))
+    dependent = bool(re.search(r"\bdependent\b", low))
+    not_dependent = bool(re.search(NOT_DEPENDENT, low))
+    about_independence = independent or dependent                  # for the question type only
+    not_independent = bool(re.search(NOT_INDEPENDENT, low)) or (dependent and not not_dependent)
+    states_independent = (independent and not not_independent) or not_dependent
     asked_independent = bool(re.search(ASKED_INDEPENDENT, low))
     # Notation is looked for in rest, where the given values have been removed: "P(A|B)=0.3" is a given,
     # not a question about P(A|B). "given B" asks for a conditional; "given P(A)=0.3" does not.
@@ -438,7 +455,7 @@ def parse(question):
         qtype = "independence"
     elif exclusive and about_independence:
         qtype = "exclusive_and_independent"             # "Can mutually exclusive events be independent?"
-    elif independent and not not_independent:
+    elif independent and not re.search(NOT_INDEPENDENT, low):
         qtype = "independence"
     elif conditional:
         qtype = "conditional"
@@ -451,8 +468,15 @@ def parse(question):
     # A property the student asks about is not a given; a stated one is.
     if qtype == "exclusive":
         exclusive = False
-    indep_given = (qtype in ("union", "conditional", "intersection", "exclusive") and independent
-                   and not not_independent and not asked_independent)
+    indep_given = (qtype in ("union", "conditional", "intersection", "exclusive") and states_independent
+                   and not asked_independent)
+    # A stated "not ..." is a given too, and the values must not contradict it; asked, it is the question.
+    # Any question about the property ("Are mutually exclusive events always dependent?") counts as asked.
+    def questioned(words):
+        clause = r"(?:[^.?!]|\.(?=\d))*"                  # a decimal point does not end the sentence
+        return bool(re.search(r"\b(?:are|is|can|could)\b%s\b(?:%s)\b%s\?" % (clause, words, clause), low))
+    not_excl_given = negated and not asked_exclusive and not questioned("mutually exclusive|disjoint")
+    not_indep_given = not_independent and not asked_independent and not questioned("(?:in)?dependent")
 
     specific = (bool(re.search(r"\b" + PR + r"[AB]", q, flags=re.I)) or bool(re.search(r"\ba\s+and\s+b\b", low))
                 or bool(re.search(r"\ba\s+(?:\w+\s+)?(?:in)?dependent\s+(?:of|from)\s+b\b", low)))
@@ -460,10 +484,11 @@ def parse(question):
     pronoun = bool(re.search(PRONOUN, low))
     referent_clear = specific or generic or not pronoun
 
-    # A stated "not ..." is a given too, and the values must not contradict it; asked, it is the question.
-    problems = unreadable + check_values(values, exclusive, indep_given,
-                                         not_exclusive=negated and not asked_exclusive,
-                                         not_independent=not_independent and not asked_independent)
+    if other_events or unsupported:
+        problems = []          # nothing is checked for a question outside A and B, so its values are not either
+    else:
+        problems = unreadable + check_values(values, exclusive, indep_given,
+                                             not_exclusive=not_excl_given, not_independent=not_indep_given)
 
     return {"question_type": qtype,
             "question_label": TYPES[qtype],
@@ -476,6 +501,8 @@ def parse(question):
             "referent_clear": referent_clear,
             "mutually_exclusive": exclusive,
             "independent": indep_given,
+            "not_mutually_exclusive": not_excl_given,
+            "not_independent": not_indep_given,
             "values": values,
             "problems": problems}
 
@@ -502,10 +529,21 @@ def from_fields(fields):
     # "Are A and B mutually exclusive?" asks about the property, so it is never taken as given there.
     exclusive = qtype == "exclusive_and_independent" or (qtype != "exclusive" and bool(fields.get("mutually_exclusive")))
     independent = qtype in ("union", "conditional", "intersection", "exclusive") and bool(fields.get("independent"))
-    interp = {"question_type": qtype, "question_label": TYPES[qtype], "events": "A and B",
+    # A stated "not mutually exclusive" or "not independent" stays a given when the form is resubmitted
+    not_exclusive = qtype != "exclusive" and fields.get("not_mutually_exclusive") is True
+    not_independent = qtype != "independence" and fields.get("not_independent") is True
+    ticked_both = ((["A and B cannot be both mutually exclusive and not mutually exclusive: untick one."]
+                    if exclusive and not_exclusive else [])
+                   + (["A and B cannot be both independent and not independent: untick one."]
+                      if independent and not_independent else []))
+    interp = {"question_type": qtype, "question_label": TYPES[qtype],
+              "events": "A and B" + (" · stated not mutually exclusive" if not_exclusive else "")
+                        + (" · stated not independent" if not_independent else ""),
               "referent_clear": True, "mutually_exclusive": exclusive, "independent": independent,
+              "not_mutually_exclusive": not_exclusive, "not_independent": not_independent,
               "values": values, "problems": problems, "corrected": True}
-    interp["problems"] += check_values(values, exclusive, independent)
+    interp["problems"] += ticked_both or check_values(values, exclusive, independent,
+                                                      not_exclusive=not_exclusive, not_independent=not_independent)
     return interp
 
 

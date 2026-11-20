@@ -37,7 +37,7 @@ PREMISE = {"none": [""], "excl": ["A and B are mutually exclusive. ", "Assume A 
                                   "Given that A and B are mutually exclusive, "],
            "indep": ["A and B are independent. ", "Assume A and B are independent. ",
                      "Given that A and B are independent, "],
-           "not": ["A and B are not mutually exclusive. ", "A and B aren't independent. "]}
+           "not": ["A and B are not mutually exclusive. ", "A and B aren't independent. ", "A and B are dependent. "]}
 NAMES = {"P(A)": ["P(A)", "Pr(A)", "P( A )"], "P(B)": ["P(B)", "Pr(B)"],
          "P(A∩B)": ["P(A∩B)", "P(A and B)", "P(A n B)", "P(A ⋂ B)", "P(A intersect B)", "P(AB)", "Pr(A∩B)"],
          "P(A∪B)": ["P(A∪B)", "P(A or B)", "P(A ⋃ B)", "P(A union B)", "Pr(A∪B)"], "P(A|B)": ["P(A|B)", "Pr(A | B)"]}
@@ -116,7 +116,7 @@ for _ in range(int(os.environ.get("CASES", 20000))):
         vab = min(va, vb) if max(va, vb) == 1 else 0.0
     contradicts = premise == "not" and vab is not None and (
         ("mutually exclusive" in lead and qtype != "exclusive" and vab == 0)
-        or ("independent" in lead and qtype != "independence" and None not in (va, vb)
+        or ("dependent" in lead and qtype != "independence" and None not in (va, vb)
             and math.isclose(vab, va * vb, rel_tol=1e-9, abs_tol=0.0)))
     if contradicts:
         if d["status"] != "invalid":
@@ -128,6 +128,7 @@ for _ in range(int(os.environ.get("CASES", 20000))):
         fails.append(("misread", q, got, (want_type, want_excl, want_indep), i["values"], vals))
         continue
     form = {"question_type": want_type, "mutually_exclusive": want_excl, "independent": want_indep,
+            "not_mutually_exclusive": bool(i.get("not_mutually_exclusive")), "not_independent": bool(i.get("not_independent")),
             "values": {k: typed[k][0] if k in vals else "" for k in KEYS}}
     if not vals and not lead and ("they" in ask.lower() or "events" in ask.lower() or ask == "Independent?"):
         continue                    # no events named and no numbers: asking which events, or the definition, is right

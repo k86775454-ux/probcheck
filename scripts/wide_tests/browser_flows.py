@@ -109,6 +109,16 @@ with sync_playwright() as p:
         expect(cue() == status, "%s: status %s, expected %s" % (q, cue(), status))
         if text:
             expect(text in t, "%s: page does not show %r" % (q, text))
+    # a stated "not independent" stays in the form: resubmitting keeps the rejection, unticking drops it
+    t = ask("A and B are not independent. P(A)=0.3, P(B)=0.4, P(A∩B)=0.12. What is P(A∪B)?")
+    expect(cue() == "invalid" and pg.is_visible("#card #not_independent"), "negated premise not shown in the form")
+    pg.click("text=Check again")
+    pg.wait_for_function("document.querySelector('#card .understood strong').textContent.includes('corrected')")
+    expect(cue() == "invalid", "resubmitting the form dropped the stated 'not independent'")
+    pg.uncheck("#card #not_independent")
+    pg.click("text=Check again")
+    pg.wait_for_function("document.querySelector('#card .cue.checked') !== null")
+    expect("0.58" in pg.inner_text("#card"), "unticking the premise did not give P(A∪B) = 0.58")
     # empty input does nothing
     before = pg.inner_text("#transcript")
     pg.fill("#msg", "   ")
