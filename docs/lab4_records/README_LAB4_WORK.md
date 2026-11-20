@@ -1,5 +1,8 @@
 # Lab 4 integration — evidence-checking study assistant
 
+> **Archived Lab 4 record.** The commands below refer to the Lab 4 app at that time. To run the current
+> project, follow the README in the repository root.
+
 This is the **complete runnable Lab 4 app route** built from the official `lab4_pack/` starter. The prior Lab 3 submission was a Markdown-only simulation and did not contain a runnable app, so the supplied Lab 4 app was used as the common starting point, as permitted by the handout. The UI title carries forward the prior project idea; the corpus and test examples remain the instructor-supplied demonstration material.
 
 ## Run it

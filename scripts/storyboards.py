@@ -1,5 +1,5 @@
 """Compose captured frames into storyboard images (docs/storyboards/)."""
-import os, sys
+import os
 from PIL import Image, ImageDraw, ImageFont
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 F = os.path.join(HERE, "docs", "frames"); OUT = os.path.join(HERE, "docs", "storyboards")

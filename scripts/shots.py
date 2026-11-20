@@ -1,4 +1,4 @@
-import os, sys, time
+import os, sys
 from playwright.sync_api import sync_playwright
 OUT = sys.argv[1]; URL = "http://localhost:8765/"
 def shot(page, name, full=False):

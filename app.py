@@ -246,14 +246,17 @@ def handle(payload):
         q = str(payload.get("message", ""))[:500]
         return answer(q, parse.parse(q), overclaim)
     if action == "correct":
-        fields = payload.get("fields") or {}
+        fields = payload.get("fields")
+        fields = fields if isinstance(fields, dict) else {}
         q = (LAST or {}).get("question", "")
         return answer(q, parse.from_fields(fields), overclaim)
     if action == "clarify" and payload.get("choice") == "exclusive_and_independent":
         q = "Can two mutually exclusive events also be independent?"
         return answer(q, parse.parse(q), overclaim)
     if action == "report":
-        return report(int(payload.get("index", -1)), payload.get("reason", ""))
+        index = payload.get("index")
+        index = index if isinstance(index, int) and not isinstance(index, bool) else -1   # the page sends 0, 1, ...
+        return report(index, payload.get("reason", ""))
     if action == "propose_slot":
         return propose_slot()
     if action in ("confirm_slot", "cancel_slot"):
@@ -293,6 +296,9 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, json.dumps(result, ensure_ascii=False, allow_nan=False).encode("utf-8"))
         except (ValueError, UnicodeDecodeError) as exc:
             self._send(400, json.dumps({"error": str(exc)}).encode("utf-8"))
+        except Exception as exc:                   # never drop the connection: the page shows the error
+            print("ERROR:", repr(exc), file=sys.stderr)
+            self._send(500, json.dumps({"error": "Something went wrong on the server."}).encode("utf-8"))
 
     def log_message(self, *args):
         pass

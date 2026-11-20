@@ -13,6 +13,8 @@ words with the opposite meaning (for example, a negation) can still pass.
 import math
 import re
 
+from checker import fmt   # the page shows calculated numbers with checker.fmt
+
 STOP = set("a an and are as at be because both but by can cannot for from has have here if in is it "
            "its of on or so than that the then there these they this to was while with".split())
 
@@ -24,8 +26,8 @@ def numbers_in(text):
 
 
 def number_allowed(n, allowed):
-    """Exact match, or the four-decimal rounding the page uses for calculated values."""
-    return any(math.isclose(n, a, rel_tol=1e-9, abs_tol=1e-12) or abs(n - round(a, 4)) < 1e-9
+    """Exact match, or exactly the rounded form the page shows for a calculated value (fmt)."""
+    return any(math.isclose(n, a, rel_tol=1e-9, abs_tol=0.0) or math.isclose(n, float(fmt(a)), rel_tol=1e-9, abs_tol=0.0)
                for a in allowed)
 
 

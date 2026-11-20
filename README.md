@@ -1,34 +1,41 @@
 # ProbCheck: an evidence-checking study assistant for probability
 
 Intelligent Interactive Systems · A2 project · student 3098204
-README prose: about 1,840 words (code blocks and commands not counted).
+README prose: about 3,050 words (code blocks and commands not counted).
 
 ProbCheck helps a first-year student decide whether to trust an explanation of a probability
 question. Each sentence of the answer links to the course-note passage it relies on. Numbers are
 recalculated in code. A verbal cue says how far the answer was checked. When the question is
 ambiguous, the system asks instead of guessing.
 
-**Submitted version:** tag `v1.3-a2` (commit hash on the report's first page). Earlier tags: `v1.0-a2` (9 November baseline), `v1.1-a2` (17 November), `v1.2-a2` (19 November).
+**Submitted version:** tag `v1.4-a2` (commit hash on the report's first page). Earlier tags: `v1.0-a2` (9 November baseline), `v1.1-a2` (17 November), `v1.2-a2` and `v1.3-a2` (19 November).
 
 ## Project status
 
 | Part | Status |
 |---|---|
 | Question parsing with a visible, editable interpretation (`parse.py`) | Implemented (rule-based) |
-| Gate: clarify unclear events, reject impossible or inconsistent values (typed question and correction form; P(A∩B) = 0 is applied when events are mutually exclusive), decline out-of-scope questions | Implemented |
-| Deterministic checks: independence, mutually exclusive + independent, addition rule, conditional probability (`checker.py`) | Implemented |
+| Gate: clarify unclear events, reject impossible or inconsistent values (typed question and correction form; a stated "mutually exclusive" or "independent" is applied, and a stated "not ..." is checked; a feasibility test rejects value sets that no two events can have), decline out-of-scope questions and events other than A and B | Implemented |
+| Deterministic checks: independence, mutually exclusive + independent, whether A and B are mutually exclusive, addition rule, P(A∩B), conditional probability; a value that follows from the givens is derived and its step shown (`checker.py`) | Implemented |
 | Retrieval with source, section, date, score; superseded passages ranked last and labelled (`retrieve.py`) | Implemented |
 | Per-sentence screening of the model's wording: citation, current source, allowed numbers, word overlap (`verify.py`) | Implemented; does not check that the meaning is correct |
-| Page: uncertainty cue ("Screened against the notes" states what the screening covers), one-click source highlight, correction form with a mutually-exclusive checkbox, mismatch report, removed-sentence list | Implemented |
+| Page: uncertainty cue ("Screened against the notes" states what the screening covers), one-click source highlight, correction form with every value field and checkboxes for a stated "mutually exclusive" or "independent", mismatch report, removed-sentence list | Implemented |
 | Revision-slot tool with validation, confirmation and log (`tools.py`) | Implemented (carried over from Lab 4, now with a topic) |
 | Language model that words the checked facts | **Simulated** (`mock_model.py`); a live OpenAI-compatible route is wired in `model.py` but **not evaluated** |
 | Course notes | **Sample notes written for this project**, not real module material |
 | Model-based question interpretation, real course notes with embeddings, tutor review of reports, replay evaluation with seeded wrong answers (no participants) | **Planned** |
 
-Known limits: the parser only recognises the notation in the examples (P(A), P(B), P(A∩B), P(A|B),
-P(A∪B)); the app keeps one conversation in memory, so it is single-user; the word-overlap check in
-`verify.py` can be fooled by a sentence that reuses the passage's words with a different meaning
-(for example, a negation); values are read to six decimal places.
+Known limits: the parser only recognises the five quantities P(A), P(B), P(A∩B), P(A|B) and
+P(A∪B), in common notations, and simple phrasings ("not mutually exclusive" is read; other ways of
+negating may not be); complements and P(B|A) are declined rather than answered; the app keeps one
+conversation in memory, so it is single-user; the word-overlap check in `verify.py` can be fooled by
+a sentence that reuses the passage's words with a different meaning (for example, a negation).
+P(A), P(B) and P(A∩B) are taken exactly as typed, so 0.1667 typed for 1/6 is not equal to 1/6 (the
+page then shows both with more decimals and suggests typing the fraction). A typed P(A∪B) or P(A|B)
+may be off by half a unit in its last digit, at most 0.0005, so 0.6667 can stand for 2/3; if that
+puts a worked-out P(A∩B) just outside its range, the nearest possible value is used and the step
+says so. Positive probabilities below 0.000000001 are declined. The correction form has no field
+for a stated "not ...", so resubmitting the form leaves it out.
 
 ## Technology stack
 
@@ -39,7 +46,9 @@ P(A∪B)); the app keeps one conversation in memory, so it is single-user; the w
 - **Language model:** `mock_model.py` by default. `model.py` can call any OpenAI-compatible chat
   endpoint through environment variables; which model to use is undecided and untested.
 - **Tests and figures:** `unittest`; Playwright with headless Chrome for the screenshots
-  (`scripts/`, only needed to regenerate figures); Pillow for the storyboards.
+  (`scripts/`, only needed to regenerate figures); Pillow for the storyboards. The wider test
+  harnesses in `scripts/wide_tests/` use NumPy and Python's exact fractions for their ground truth; the app
+  itself does not.
 
 ## Running or inspecting the work
 
@@ -51,6 +60,19 @@ python tools.py --selftest
 python mock_model.py --selftest
 python checker.py "P(A)=0.3, P(B)=0.5, P(A∩B)=0.15. Are A and B independent?"
 python retrieve.py --no-rerank "can two events be mutually exclusive and independent"   # the Lab 4 ranking failure
+```
+
+Wider tests (optional, need `pip install numpy`; each takes a few minutes and prints its
+failures; `SEED=n` before a harness tries other random cases):
+
+```bash
+python scripts/wide_tests/harness_grid.py .        # value grid, random forms, demo, phrasings, odd inputs
+python scripts/wide_tests/harness_premises.py .    # stated premises, fractions and percentages, form resubmission
+python scripts/wide_tests/harness_phrasing.py .    # phrasings, notation and number formats, compared with the form
+python scripts/wide_tests/stress_values.py . 1 100000   # value sets against an exact feasibility test
+# with a server running from a scratch copy (python app.py --port 8766):
+python scripts/wide_tests/http_requests.py 8766    # odd requests and random multi-turn sequences
+python scripts/wide_tests/browser_flows.py http://localhost:8766/   # every page flow in headless Chrome
 ```
 
 Try the five example chips on the page. Tick **Demo: simulate an overconfident model reply** to see
@@ -142,8 +164,72 @@ record below says where Claude advised.
   adding the student's triggering action to each, and the diagram. I ran all 44 tests and retried
   three cases in the browser ([`b2b9ce8`](../../commit/b2b9ce8), `fix_exclusive_union.png`). A negated
   sentence can still pass the word-overlap screen; the report states this limit.
+- **Third review round (20 November, with Claude):** further AI reviews (including OpenAI Codex and
+  ChatGPT) found that "not mutually exclusive" was read as mutually exclusive, so P(A∪B) = 0.9 was shown
+  as checked; that a stated "mutually exclusive" was not used for P(A|B); that the correction form had
+  no P(A∪B) or P(A|B) field, so resubmitting it dropped a value that contradicted the others; that
+  fractions were rounded, so 1/3 × 1/2 was "not equal" to 1/6; that "What is P(A∩B)?" and "Are A and B
+  mutually exclusive?" with numbers were misread; that a stated "independent" was ignored; and that very
+  small numbers were removed from correct sentences. One claim, a missing § sign, was a false alarm.
+  This time I asked Claude to do the reproduction as well: it reproduced the cases on `v1.3-a2`,
+  captured the before and after screens (`bug_not_exclusive.png`, `fix_not_exclusive.png`), drafted the
+  fixes and tests, and re-captured the changed storyboard frame.
+- **Wider testing before v1.4 (20 November, with Claude):** before pushing these fixes I asked Claude
+  to test many more cases, fix anything it found, and keep the code readable, reliable and accurate.
+  It wrote the harnesses in `scripts/wide_tests/`, which compare ProbCheck with a ground truth it does
+  not share: a linear-programming feasibility test (in SciPy at first), and the correction form filled
+  in with the true reading of each question. A full run covers over 100,000 questions and form
+  submissions and 100,000 random value sets. The wider testing found more: "A and B are independent.
+  Are they mutually exclusive?" was answered as an independence question; "the probability of A or B,
+  given P(A)=…" was answered as P(A|B); "Are A and C independent?" was answered about A and B;
+  "dependent" and lowercase notation were not read; impossible values such as P(A∩B) = 0.7 with P(A∪B)
+  = 0.2 were accepted, while 0.6667 typed for 2/3 was rejected; and 0.1667 typed for 1/6 produced
+  "0.1667 ≠ 0.1667". Claude fixed these: the question asked now decides the type, events other than A
+  and B are declined, an feasibility test (`_possible` in `parse.py`) rejects values that no two
+  events can have, and close values are shown with enough decimals to differ. Tests cover both rounds
+  (`tests/test_review_round3.py`, `tests/test_wider_checks.py`).
+- **Second wider pass (20 November, with Claude):** I then asked for another large round of testing.
+  Claude fuzzed the notation and number formats, sent odd requests and random multi-turn sequences to
+  a running server, drove every page flow in headless Chrome (`http_requests.py`, `browser_flows.py`),
+  and reran the harnesses with new random seeds. It found that "P(A)=0,3" was read as 0, so all-zero
+  values were "checked: independent"; that "30 percent", "equals", "1e-3", "Pr(A)", "P(A ⋂ B)" and
+  "P(A∩B)=?" were not read or were misread; that a value given twice with different numbers was
+  silently resolved; that P(A') and P(B|A) were ignored rather than declined; that "P(A)=0.3. What is
+  P(A|B)?" was shown as checked with no answer; that P(A) = 0 or 1 was not used, so "P(A)=0, P(B)=0.5.
+  Are A and B independent?" asked for P(A∩B); that P(B) = 0 did not make P(A|B) undefined until
+  P(A∩B) was given; and that a malformed request could drop the connection. Claude fixed these, and
+  ten tests cover them (`tests/test_more_inputs.py`).
+- **Fourth review round (20 November, with Claude):** before pushing, I had OpenAI Codex review the
+  first v1.4 patch independently and gave its report to Claude. From about 37,000 checks it reported
+  nine kinds of problem, including 214 impossible value sets that were accepted. Claude reproduced
+  them on the current patch: three were already fixed by the second pass ("1e-3", a value given twice,
+  the slot message), and six were not. "P(A)=0, P(A|B)=0.5" was checked as 0.5: the feasibility test
+  stood in a tiny positive number for "P(B) > 0", and its tolerance let the contradiction through.
+  Rounded values could give P(A|B) = −0.0002 or 1.0002. Tiny probabilities were rounded away
+  (10^-14 became 0, and 10^-16 counted as equal to 0). "Are C and D independent?" and "Is A
+  independent of C?" were answered about A and B. Without a question mark, "Are A and B mutually
+  exclusive" was read as a premise. "P(A)=0.5/2" was read as 0.5, and a stated "not independent" was
+  never checked against the values. Claude's own test oracle had the same blind spot, because it
+  also used floating-point tolerances with P(B) ≥ 10^-9, so it was replaced by an exact one using
+  fractions. The fixes:
+  - P(B) > 0 is now tested exactly.
+  - The rounding allowance for P(A∪B) and P(A|B) now follows the digits typed, and a worked-out value
+    that rounding puts just outside its range is moved to the nearest possible value, with the step
+    saying so.
+  - Floating-point noise is removed relative to the numbers involved.
+  - Every event name in the question is read.
+  - Word order marks a question.
+  - A number is read whole or reported.
+  - A stated "not ..." is checked.
+  - Slots for different topics on one day are both kept.
 
-All 44 tests pass on the tagged version (`python -m unittest discover -s tests`).
+  Nine tests cover the cases (`tests/test_review_round4.py`). The final runs of every harness (two
+  random seeds each), the HTTP test and the browser test found no failures. The review's own claim
+  still stands: "no failures" covers the cases these tests generate, not every possible input. I
+  applied the third-round, wider-testing and fourth-round changes as one commit, ran all 79 tests
+  and pushed it (tag [`v1.4-a2`](../../tree/v1.4-a2)).
+
+All 79 tests pass on the tagged version (`python -m unittest discover -s tests`).
 
 ## AI assistance
 
@@ -163,6 +249,11 @@ All 44 tests pass on the tagged version (`python -m unittest discover -s tests`)
   submission. Claude reproduced their cases on `v1.2-a2`, drafted the fixes and tests, regenerated the
   figures, cropped the browser bar from `fix_nonnumeric.png`, and drafted these entries and the messages
   of `b2b9ce8` and this README commit.
+- **Third and fourth review responses and wider testing (20 November):** at my request Claude
+  reproduced the reported cases on `v1.3-a2`, captured the before and after screenshots, wrote the
+  wider test harnesses and the HTTP and browser tests, drafted the fixes, tests, this entry and the
+  commit message, re-captured the changed storyboard frame, and added an archive note to the Lab 4
+  record.
 - **What Claude checked:** it ran the test suite and self-tests and inspected every screenshot (this is
   how the hidden-form, ∩-glyph and wording bugs were found). It recomputed the example arithmetic and
   checked the references against the Lab 1 shortlist and the A1 sources.
@@ -170,7 +261,11 @@ All 44 tests pass on the tagged version (`python -m unittest discover -s tests`)
   told me which lines to change; I made the edit, tested it in the browser and committed it myself.
   For the consistency fix I reproduced the bug first, then ran and retried Claude's change; the
   wording fix was my own. In the second round I reproduced the 1.5 case, then retried it, a rounded
-  P(A|B) and the form's checkbox after the fix.
+  P(A|B) and the form's checkbox after the fix. In the third round I decided to fix the code rather
+  than narrow the report's claims, asked Claude to reproduce the cases and capture the screenshots,
+  and required wider testing, and then a second large round, before anything was pushed. I then
+  had OpenAI Codex review the patch independently and passed its report to Claude. I applied the
+  change, ran the tests, and committed and pushed it.
 
 ## Additional files
 

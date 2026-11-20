@@ -75,8 +75,12 @@ def run(call, confirmed_by="user"):
         with open(SCHEDULE, encoding="utf-8") as f:
             slots = json.load(f)
     a = call["arguments"]
-    if any(s["date"] == a["date"] and s["minutes"] == int(a["minutes"]) for s in slots):
-        result = {"status": "ok", "id": None, "note": "identical slot already present; nothing added"}
+    if any(s["date"] == a["date"] and s["minutes"] == int(a["minutes"]) and s.get("topic", "") == a.get("topic", "")
+           for s in slots):
+        # confirming the same slot twice adds it once; another topic on the same day is a new slot
+        result = {"status": "ok", "id": None,
+                  "note": "This %d-minute slot on %s is already in your schedule; nothing added."
+                          % (int(a["minutes"]), a["date"])}
     else:
         slot = {"id": "slot_%d" % (len(slots) + 1), "date": a["date"], "minutes": int(a["minutes"]),
                 "topic": a.get("topic", "")}

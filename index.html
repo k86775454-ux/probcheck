@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<link rel="icon" href="data:,">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ProbCheck · evidence-checking study assistant</title>
 <style>
@@ -103,6 +104,8 @@ const EXAMPLES=[
 const ICON={checked:"✓",depends:"?",clarify:"?",unsupported:"!",cannot_check:"✕",invalid:"✕",error:"✕"};
 const $=id=>document.getElementById(id), card=$("card"), tr=$("transcript");
 let current=null;
+function shown(x){const n=Number(x),r=(n!==0&&Math.abs(n)<1e-4)?+n.toPrecision(3):+n.toFixed(6);   // exact values are kept; long ones are shown rounded
+  return (r===n?"= ":"≈ ")+r;}
 function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e;}
 function say(text,me){tr.appendChild(el("div","turn"+(me?" me":""),text));tr.scrollTop=tr.scrollHeight;}
 async function post(body){
@@ -136,9 +139,10 @@ function understood(d){
   box.appendChild(el("strong","",i.corrected?"What I understood (corrected by you)":"What I understood"));
   const dl=el("dl");
   dl.append(el("dt","","Question"),el("dd","",i.question_label),el("dt","","Events"),
-    el("dd","",i.events+(i.mutually_exclusive?" · mutually exclusive, so P(A∩B) = 0":"")));
+    el("dd","",i.events+(i.mutually_exclusive?" · mutually exclusive, so P(A∩B) = 0":"")
+                       +(i.independent?" · independent, so P(A∩B) = P(A)P(B)":"")));
   const vals=el("dd"); const keys=Object.keys(i.values);
-  if(keys.length) keys.forEach(k=>vals.appendChild(el("span","val",k+" = "+i.values[k]))); else vals.textContent="none given";
+  if(keys.length) keys.forEach(k=>vals.appendChild(el("span","val",k+" "+shown(i.values[k])))); else vals.textContent="none given";
   dl.append(el("dt","","Values"),vals); box.appendChild(dl);
   const btn=el("button","link","Correct these details"); box.appendChild(btn);
   const form=correctionForm(i); form.hidden=!d.open_correction; box.appendChild(form);
@@ -147,15 +151,19 @@ function understood(d){
 function correctionForm(i){
   const f=el("div","form"), sel=el("select");
   [["independence","Are A and B independent?"],["exclusive_and_independent","Can mutually exclusive events be independent?"],
-   ["conditional","What is P(A|B)?"],["union","What is P(A∪B)?"]].forEach(([v,t])=>{const o=el("option","",t);o.value=v;if(v===i.question_type)o.selected=true;sel.appendChild(o);});
+   ["conditional","What is P(A|B)?"],["union","What is P(A∪B)?"],["intersection","What is P(A∩B)?"],
+   ["exclusive","Are A and B mutually exclusive?"]].forEach(([v,t])=>{const o=el("option","",t);o.value=v;if(v===i.question_type)o.selected=true;sel.appendChild(o);});
   f.append(el("label","","Question"),sel); const inputs={};
-  ["P(A)","P(B)","P(A∩B)"].forEach(k=>{const inp=el("input");inp.value=i.values[k]??"";inp.placeholder="leave blank if unknown";
+  ["P(A)","P(B)","P(A∩B)","P(A∪B)","P(A|B)"].forEach(k=>{const inp=el("input");inp.value=i.values[k]??"";inp.placeholder="leave blank if not given";   // every value the parser can read, so none is dropped silently
     inp.setAttribute("aria-label",k);inputs[k]=inp;f.append(el("label","",k),inp);});
   const ex=el("input");ex.type="checkbox";ex.id="excl";ex.checked=!!i.mutually_exclusive;   // keep this assumption visible
-  const exl=el("label","check");exl.append(ex," A and B are mutually exclusive");f.append(el("span"),exl);
+  const exl=el("label","check");exl.append(ex," A and B are mutually exclusive (given)");f.append(el("span"),exl);
+  const ind=el("input");ind.type="checkbox";ind.id="indep";ind.checked=!!i.independent;
+  const indl=el("label","check");indl.append(ind," A and B are independent (given)");f.append(el("span"),indl);
   const go=el("button","primary","Check again"); go.onclick=()=>{const values={};for(const k in inputs)values[k]=inputs[k].value;
-    act({action:"correct",fields:{question_type:sel.value,values,mutually_exclusive:ex.checked}},"Corrected: "+sel.options[sel.selectedIndex].text+" "+
-      Object.entries(values).filter(([k,v])=>v).map(([k,v])=>k+"="+v).join(", ")+(ex.checked?" (mutually exclusive)":""));};
+    act({action:"correct",fields:{question_type:sel.value,values,mutually_exclusive:ex.checked,independent:ind.checked}},
+      "Corrected: "+sel.options[sel.selectedIndex].text+" "+Object.entries(values).filter(([k,v])=>v).map(([k,v])=>k+"="+v).join(", ")
+      +(ex.checked?" (mutually exclusive)":"")+(ind.checked?" (independent)":""));};
   f.append(el("span"),go); return f;}
 
 function render(d){
@@ -196,7 +204,8 @@ function render(d){
 
 function showReport(d){
   if(!d||!d.report)return; const r=d.report;
-  const li=card.querySelectorAll("ol.answer li")[r.index]; const box=el("div","reportbox");
+  const removed=r.status==="saved"&&!r.recheck.supported;          // its list item is gone, so report under the list
+  const li=removed?null:card.querySelectorAll("ol.answer li")[r.index]; const box=el("div","reportbox");
   if(r.status!=="saved"){box.textContent=r.reason;}
   else{const c=r.recheck;
     box.append(el("strong","","Report "+r.id+" saved. "));
